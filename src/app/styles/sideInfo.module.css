@@ -1,0 +1,24 @@
+/* Side Info Container */
+.sideInfo {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 80%;
+    height: 85%;
+    padding: 50px;
+    padding-left: 200px;
+}
+
+/* Side Info Title */
+.infoLabel {
+    width: auto;
+    height: auto;
+}
+
+/* Side Info Text*/
+.info {
+    width: auto;
+    height: auto;
+}

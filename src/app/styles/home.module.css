@@ -1,0 +1,59 @@
+/* styles/Home.module.css */
+
+/* Root Component */
+.app {
+    display: flex;
+    flex-direction: column;
+}
+
+.mainContainer {
+    margin-top: 64px; /* Equivalent to marginTop: 8 */
+    padding: 32px;    /* Equivalent to padding: 4 */
+    gap: 32px;        /* Equivalent to gap: 4 */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* AppBar Component */
+.appBar {
+    flex-grow: 1;
+}
+
+.userButton {
+    justify-content: flex-end;
+}
+
+/* Input Section */
+.uiInputSection {
+    display: flex;
+    flex-direction: column;
+    gap: 32px; /* Equivalent to gap: 4 */
+}
+
+.inputRow {
+    display: flex;
+    flex-direction: row;
+    gap: 32px; /* Equivalent to gap: 4 */
+}
+
+.formControlBox {
+    min-width: 180px;
+    max-width: 240px;
+}
+
+/* Prediction Result */
+.predictionResult {
+    margin-top: 16px; /* Equivalent to marginTop: 2 */
+}
+
+/* User Log */
+.userLogContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Equivalent to gap: 2 */
+}
+
+.userLogTitle {
+    text-align: left;
+}

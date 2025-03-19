@@ -1,0 +1,10 @@
+name: MongoDB
+services:
+    mongodb-community-server:
+        container_name: mongodb
+        volumes:
+            - ./data/db:/data/db
+        ports:
+            - 41211:27017
+        image: mongodb/mongodb-community-server:latest
+        pull_policy: missing

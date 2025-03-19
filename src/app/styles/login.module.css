@@ -1,0 +1,51 @@
+/* Root */
+.loginPage {
+    display: flex;
+    flex-direction: row;
+    width: 85vw;
+    height: 100vh;
+}
+
+/* Login Form Container */
+.loginFormContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+/* Login Form */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 32px;
+    border-radius: 8px;
+    width: 100%;
+    height: auto;
+    max-width: 400px;
+    /* background-color: #fff; */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.error {
+    color: #ff3333;
+}
+
+/* Sign Up Excerpt */
+.noAccount {
+    text-align: center;
+}
+
+.loginLabel {
+    color: #929292;
+    /* text-align: left; */
+    /* width: 100%; */
+}
+
+.title {
+    margin-bottom: 16px;
+}

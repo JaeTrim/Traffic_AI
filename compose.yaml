@@ -1,0 +1,13 @@
+name: traffic_ai
+services:
+    traffic_ai:
+        pull_policy: never
+        build: .
+        volumes: # Bind volumes in container to host directories
+            - ./FastAPI/models:/app/FastAPI/models
+            - ./MongoDB/data:/app/MongoDB/data
+        ports: # Expose docker ports, Uncomment to expose other ports for debugging
+            - 11114:3000 # NodeJS
+            # - 41211:27017 # MongoDB
+            # - 14121:8000 # FastAPI
+        image: traffic_ai
