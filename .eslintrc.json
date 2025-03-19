@@ -1,0 +1,7 @@
+{
+    "env": {
+        "node": true,
+        "browser": true // Allow browser-related globals
+    },
+    "extends": ["next/core-web-vitals"]
+}

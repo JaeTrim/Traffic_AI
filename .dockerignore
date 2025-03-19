@@ -1,0 +1,39 @@
+# Node.js dependencies
+/node_modules
+/.next
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+.babel_cache/
+.cache/
+
+# Next.js build output
+.next/
+out/
+
+# Python environment
+venv/
+venv_mac/
+FastAPI/venv/
+FastAPI/__pycache__/
+
+# Python files
+*.py[cod]
+*.pyo
+
+# FastAPI related
+*.sqlite3
+
+# Environment variables
+
+
+# Misc
+.DS_Store
+*.swp
