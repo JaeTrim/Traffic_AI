@@ -1,7 +1,7 @@
 # Traffic_AI
 [Previous Project](https://vtechworks.lib.vt.edu/items/bd9772e1-81d0-48af-89fe-31c788c01ec5)
 
-*A new terminal must be opened when running each component
+*A new terminal must be opened when running each framework (MongoDB, FastAPI, Next.js)
 
 **Changes required**  
 - Change compose.yml file in MongoDB directory  
