@@ -48,8 +48,7 @@ Then, start it up by running this command:
 **Adding an admin user**
 - cd MongoDB
 - docker ps (to see current containers running)
-- docker exec -it mongodb mongosh
-- “mongodb” can be different based on name found under docker ps
+- docker exec -it mongodb mongosh (“mongodb” can be different based on name found under docker ps)  
 - show dbs
 - use trafficai
 - show collections
