@@ -61,5 +61,8 @@ EX: db.users.updateOne( { username: "dyang" }, { $set: { role: "admin" } } );
 http://localhost:3000.
 
 **Troublshooting**
-- If it says Next.JS is out of date use this command to update the packages
+- If Next.js is outdated, run the following command in the root directory to update the packages:
 - npm i next@latest (https://nextjs.org/docs/messages/version-staleness)
+
+![image](https://github.com/user-attachments/assets/12037ae8-9527-466b-9b5b-844143fa6157)
+- Error has been fixed
