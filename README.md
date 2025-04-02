@@ -62,4 +62,4 @@ http://localhost:3000.
 
 **Troublshooting**
 - If it says Next.JS is out of date use this command to update the packages
-- https://nextjs.org/docs/messages/version-staleness
+- npm i next@latest (https://nextjs.org/docs/messages/version-staleness)
