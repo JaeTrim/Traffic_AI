@@ -59,3 +59,7 @@ EX: db.users.updateOne( { username: "dyang" }, { $set: { role: "admin" } } );
 **Accessing the Website** 
 - After ensuring that all 3 frameworks are running, the website can be accessed through
 http://localhost:3000.
+
+**Troublshooting**
+- If it says Next.JS is out of date use this command to update the packages
+- https://nextjs.org/docs/messages/version-staleness
