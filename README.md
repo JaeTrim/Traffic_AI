@@ -66,3 +66,6 @@ http://localhost:3000.
 
 ![image](https://github.com/user-attachments/assets/12037ae8-9527-466b-9b5b-844143fa6157)
 - Error has been fixed
+
+Running the python notebook
+- python3.11 -m jupyter notebook [python notebook]
