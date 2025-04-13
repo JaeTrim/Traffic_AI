@@ -61,3 +61,38 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
     }
 }
+
+export async function PATCH(request, { params }) {
+    const { collectionId } = params;
+
+    try {
+        await connectToDatabase();
+
+        if (!mongoose.Types.ObjectId.isValid(collectionId)) {
+            return NextResponse.json({ error: 'Invalid collection ID.' }, { status: 400 });
+        }
+        
+        // Parse the request body to get the new collection name
+        const { collectionName } = await request.json();
+        
+        if (!collectionName || !collectionName.trim()) {
+            return NextResponse.json({ error: 'Collection name is required.' }, { status: 400 });
+        }
+
+        // Find and update the collection
+        const updatedCollection = await PredictionCollection.findByIdAndUpdate(
+            collectionId,
+            { $set: { collectionName: collectionName.trim() } },
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedCollection) {
+            return NextResponse.json({ error: 'Collection not found.' }, { status: 404 });
+        }
+
+        return NextResponse.json(updatedCollection, { status: 200 });
+    } catch (error) {
+        console.error('Error updating collection:', error);
+        return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    }
+}

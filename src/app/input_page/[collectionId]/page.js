@@ -1,8 +1,19 @@
-// src/app/input_page/[collectionId]/page.js
 
 'use client'
 
+
+//colors:
+//maroon: 861F41
+//orange: C95B0C
+
 import React, { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import MenuIcon from '@mui/icons-material/Menu'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import BarChartIcon from '@mui/icons-material/BarChart'
+
 import {
     Box,
     FormControl,
@@ -15,9 +26,17 @@ import {
     FormControlLabel,
     Checkbox,
     CircularProgress,
+    AppBar,
+    Toolbar,
+    IconButton,
+    Menu,
+    Container,
+    Card,
+    CardContent,
+    Alert,
+    Grid,
+    Divider,
 } from '@mui/material'
-import { useRouter, useParams } from 'next/navigation'
-import UIMenu from '../../components/UIMenu' // Adjust the import path as needed
 
 export default function InputPage() {
     const router = useRouter()
@@ -31,16 +50,18 @@ export default function InputPage() {
     const [model, setModel] = useState('default')
     const [models, setModels] = useState([])
     const [modelInputs, setModelInputs] = useState([])
-    const [logTransform, setLogTransform] = useState(false) // Track log transform option
+    const [logTransform, setLogTransform] = useState(false)
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
 
-    // New state variables for user data
-    const [userId, setUserId] = useState(null)
+    const [user, setUser] = useState(null)
     const [userLoading, setUserLoading] = useState(true)
 
+    const [userMenuAnchor, setUserMenuAnchor] = useState(null)
+    const [mainMenuAnchor, setMainMenuAnchor] = useState(null)
+
     useEffect(() => {
-        // Fetch user data to get userId
         const fetchUserData = async () => {
             try {
                 const res = await fetch('/api/auth/user', {
@@ -50,17 +71,20 @@ export default function InputPage() {
                     },
                     credentials: 'include',
                 })
-
                 if (!res.ok) {
                     throw new Error('Failed to fetch user data.')
                 }
-
                 const data = await res.json()
-                setUserId(data.userId)
-            } catch (err) {
+                setUser({
+                    userId: data.userId,
+                    username: data.username
+                })
+            } 
+            catch (err) {
                 console.error('Error fetching user data:', err)
                 setError(err.message || 'Failed to fetch user data.')
-            } finally {
+            } 
+            finally {
                 setUserLoading(false)
             }
         }
@@ -69,7 +93,6 @@ export default function InputPage() {
     }, [])
 
     useEffect(() => {
-        // Fetch collection details to get collectionName
         const fetchCollectionDetails = async () => {
             try {
                 const res = await fetch(`/api/collections/${collectionId}`, {
@@ -79,20 +102,20 @@ export default function InputPage() {
                     },
                     credentials: 'include',
                 })
-
                 if (!res.ok) {
                     const errorData = await res.json()
                     throw new Error(
                         errorData.error || 'Failed to fetch collection details.'
                     )
                 }
-
                 const data = await res.json()
                 setCollectionName(data.collectionName)
-            } catch (err) {
+            } 
+            catch (err) {
                 console.error('Error fetching collection details:', err)
                 setError(err.message || 'Failed to fetch collection details.')
-            } finally {
+            } 
+            finally {
                 setLoading(false)
             }
         }
@@ -115,9 +138,10 @@ export default function InputPage() {
                 const data = await res.json()
                 if (data && Array.isArray(data)) {
                     setModels(data)
-                    setModel(data[0]?._id || 'default') // Default model if available
+                    setModel(data[0]?._id || 'default') 
                 }
-            } catch (error) {
+            } 
+            catch (error) {
                 console.error('Error fetching models:', error)
             }
         }
@@ -125,106 +149,91 @@ export default function InputPage() {
         fetchModels()
     }, [])
 
-    const handleModelChange = async (e) => {
-        const selectedModel = e.target.value
-        setModel(selectedModel)
+    const modelChange = async (e) => {
+        const model = e.target.value
+        setModel(model)
 
-        // Fetch dynamic fields for the selected model
         try {
-            const res = await fetch(`/api/models/${selectedModel}`, {
+            const res = await fetch(`/api/models/${model}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
             })
-            const data = await res.json()
 
+            const data = await res.json()
             if (data && Array.isArray(data.inputFields)) {
                 setModelInputs(data.inputFields)
-            } else {
+            } 
+            else {
                 setModelInputs([])
             }
-        } catch (err) {
-            console.error(
-                `Error fetching fields for model ${selectedModel}:`,
-                err
-            )
+        } 
+        catch (err) {
+            console.error(`Error fetching fields for model ${model}:`, err)
             setModelInputs([])
         }
     }
 
-    const handleInputChange = (name, value) => {
+    const inputChange = (name, value) => {
         setInputFields((prev) => ({
             ...prev,
             [name]: value,
         }))
     }
 
-    const handleFileChange = (e) => {
+    const fileChange = (e) => {
         setFile(e.target.files[0])
     }
 
-    const handleLogTransformChange = (e) => {
-        setLogTransform(e.target.checked) // Update log transform value
+    const logTransformChange = (e) => {
+        setLogTransform(e.target.checked)
     }
 
-    const handleSubmit = async (e) => {
+    const submit = async (e) => {
         e.preventDefault()
-
-        // Validation
         if (!model.trim()) {
-            setError('Model selection is required.')
+            setError('Model selection is required')
             return
         }
-
         if (inputType === 'manual' && modelInputs.length > 0) {
             const hasEmptyInputs = modelInputs.some(
                 (input) => !inputFields[input]?.toString().trim()
             )
             if (hasEmptyInputs) {
-                setError('All input fields must be filled.')
+                setError('Fill all input fields')
                 return
             }
         }
-
-        if (inputType === 'csv' && !file) {
+        if (inputType === 'csv' && !file) { //checking for csv file
             setError('CSV file is required.')
             return
         }
-
-        if (userLoading) {
-            setError('User information is still loading.')
+        if (userLoading) { //checking user info loading
+            setError('Loading user information')
             return
         }
-
-        if (!userId) {
-            setError('User not authenticated.')
+        if (!user || !user.userId) {
+            setError('User not authenticated')
             return
         }
-
         setError('')
-        setLoading(true)
+        setSubmitting(true)
 
         try {
-            // Retrieve the JWT token from cookies
-            const token = getCookie('token') // Implement getCookie to retrieve the token from cookies
-
+            const token = getCookie('token')
             if (!token) {
                 throw new Error('User not authenticated. Please log in.')
             }
-
             let response
-
-            if (inputType === 'csv') {
-                // Prepare FormData for CSV submission
+            if (inputType === 'csv') { //for submitting csv
                 const formData = new FormData()
                 formData.append('collectionId', collectionId)
                 formData.append('modelId', model)
                 formData.append('csv', file)
                 formData.append('logTransform', logTransform.toString())
 
-                // Send POST request to /api/predict/csv
                 response = await fetch('/api/predict/csv', {
                     method: 'POST',
                     headers: {
@@ -232,28 +241,26 @@ export default function InputPage() {
                     },
                     body: formData,
                 })
-            } else if (inputType === 'manual') {
-                // Convert inputFields values to numbers
+            } 
+            else if (inputType === 'manual') {
                 const numericInputFields = {}
                 for (const key in inputFields) {
                     numericInputFields[key] = parseFloat(inputFields[key])
                     if (isNaN(numericInputFields[key])) {
                         setError(`Input "${key}" must be a number.`)
-                        setLoading(false)
+                        setSubmitting(false)
                         return
                     }
                 }
 
-                // Prepare JSON payload for Manual submission
-                const payload = {
+                const payload = { //json, manual submission
                     collectionId,
-                    userId, // Include userId in the payload
+                    userId: user.userId, //userid in payload
                     modelId: model,
-                    inputs: numericInputFields, // Use numeric inputs
-                    logTransform, // Ensure this is a boolean
+                    inputs: numericInputFields,
+                    logTransform,
                 }
 
-                // Send POST request to /api/predict/single
                 response = await fetch('/api/predict/single', {
                     method: 'POST',
                     headers: {
@@ -262,42 +269,62 @@ export default function InputPage() {
                     },
                     body: JSON.stringify(payload),
                 })
-            } else {
-                throw new Error('Invalid input type selected.')
+            } 
+            else {
+                throw new Error('Input type invalid')
             }
 
             if (!response.ok) {
                 const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to add prediction.')
+                throw new Error(errorData.error || 'Failed to add prediction')
             }
 
             const data = await response.json()
-            console.log('Prediction added successfully:', data)
+            console.log('Prediction added:', data)
 
-            // Optionally, reset the form or navigate back
+            try {
+                console.log("Creating log entry...");
+                if (!user || !user.userId) {
+                    const userResponse = await fetch('/api/auth/user', {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                    });
+                    
+                    if (!userResponse.ok) {
+                        throw new Error('Failed to get user data for logging');
+                    }
+                    
+                    const userData = await userResponse.json();
+                    console.log("Retrieved user data for logging:", userData);
+                    await entry(userData.userId, models.find(m => m._id === model)?.name || model);
+                } 
+                else {
+                    await entry(user.userId, models.find(m => m._id === model)?.name || model);
+                }
+            } 
+            catch (logError) {
+                console.error('Error creating log entry:', logError);
+            }
+
             if (inputType === 'manual') {
                 setInputFields({})
             }
-
-            // Reset file if CSV
             if (inputType === 'csv') {
                 setFile(null)
             }
-
-            // Update the prediction state with the prediction data
             setPrediction(data.prediction)
-
-            // Optionally, redirect back to Reports Page
             router.push(`/reports_page/${collectionId}`)
-        } catch (err) {
+        } 
+        catch (err) {
             console.error('Error adding prediction:', err)
-            setError(err.message || 'Failed to add prediction.')
-        } finally {
-            setLoading(false)
+            setError(err.message || 'Failed to add prediction')
+        } 
+        finally {
+            setSubmitting(false)
         }
     }
 
-    // Utility function to get cookie by name
     const getCookie = (name) => {
         if (typeof window === 'undefined') return null
         const value = `; ${document.cookie}`
@@ -305,197 +332,448 @@ export default function InputPage() {
         if (parts.length === 2) return parts.pop().split(';').shift()
         return null
     }
+    
+    // User menu handlers
+    const userMenuOpen = (event) => {
+        setUserMenuAnchor(event.currentTarget)
+    }
+
+    const userMenuClose = () => {
+        setUserMenuAnchor(null)
+    }
+
+    // Main menu handlers
+    const mainMenuOpen = (event) => {
+        setMainMenuAnchor(event.currentTarget)
+    }
+
+    const mainMenuClose = () => {
+        setMainMenuAnchor(null)
+    }
+
+    const logout = () => {
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        router.push('/login')
+        userMenuClose()
+    }
+
+    const goHome = () => {
+        router.push('/')
+        mainMenuClose()
+    }
+
+    const goAddModel = () => {
+        router.push('/newmodel')
+        mainMenuClose()
+    }
+
+    const goModelsList = () => {
+        router.push('/managemodel')
+        mainMenuClose()
+    }
+    
+    const goCollection = () => {
+        router.push(`/reports_page/${collectionId}`)
+    }
+
+    async function entry(userId, modelName) {
+        try {
+            let count = 1; 
+            if (inputType === 'csv' && file) {
+                try {
+                    const reader = new FileReader();
+                    const numRows = await new Promise((resolve) => {
+                        reader.onload = function(event) {
+                            const csvContent = event.target.result;
+                            const lines = csvContent.split('\n').filter(line => line.trim().length > 0);
+                            resolve(lines.length > 1 ? lines.length - 1 : 1);
+                        };
+                        reader.readAsText(file);
+                    });
+                    
+                    count = numRows;
+                    console.log(`Determined ${count} rows from CSV file`);
+                } 
+
+                catch (fileError) {
+                    console.error("Error reading CSV file:", fileError);
+                    if (prediction && Array.isArray(prediction)) {
+                        count = prediction.length;
+                    }
+                }
+            }
+            console.log(`Creating log entry with count: ${count} for ${inputType} source`);
+            const payload = {
+                modelName: modelName,
+                inputSource: inputType === 'csv' ? (file ? file.name : 'CSV import') : 'Manual input',
+                predictionsCount: count,
+                userId: userId,
+                timestamp: new Date()
+            };
+            
+            console.log("Sending log payload:", payload);
+
+            const logResponse = await fetch('/api/log', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+            
+            const responseText = await logResponse.text();
+            
+            if (logResponse.ok) {
+                console.log("Log entry created successfully:", responseText);
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('refreshActivityLog'));
+                }, 1000);
+                return true;
+            } 
+            else {
+                console.error("Failed to create log entry:", responseText);
+                return false;
+            }
+        } 
+        catch (error) {
+            console.error("Error in entry:", error);
+            return false;
+        }
+    }
+
+    // UI ELEMENTS 
 
     return (
-        <Box sx={{ padding: 4 }}>
-            <UIMenu />
-            <Box
-                component="form"
-                onSubmit={handleSubmit}
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: 4,
-                    marginTop: 8,
-                    maxWidth: 600,
-                    margin: '0 auto',
-                }}
-            >
-                {/* Display Collection Name */}
-                {loading ? (
-                    <CircularProgress />
-                ) : error ? (
-                    <Typography variant="body1" color="error">
-                        {error}
-                    </Typography>
-                ) : (
-                    <Typography variant="h5" sx={{ marginBottom: 2 }}>
-                        Collection: {collectionName}
-                    </Typography>
-                )}
-
-                {/* Choose Model Dropdown */}
-                <FormControl fullWidth sx={{ maxWidth: 400, marginTop: 4 }}>
-                    <InputLabel id="model-label">Choose Model</InputLabel>
-                    <Select
-                        labelId="model-label"
-                        value={model}
-                        label="Choose Model"
-                        onChange={handleModelChange}
-                        required
+        <Box sx={{ 
+            minHeight: '100vh',
+            backgroundColor: '#f5f7fa',
+        }}>
+            {/*app bar that matches the home page*/}
+            <AppBar position="fixed" elevation={3} sx={{ backgroundColor: '#861F41' }}>
+                <Toolbar>
+                    <IconButton 
+                        edge="start" 
+                        color="inherit" 
+                        aria-label="menu" 
+                        sx={{ mr: 2 }}
+                        onClick={mainMenuOpen}
                     >
-                        {models.map((modelItem) => (
-                            <MenuItem key={modelItem._id} value={modelItem._id}>
-                                {modelItem.name}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
-                {/* Input Type Dropdown */}
-                <FormControl fullWidth sx={{ maxWidth: 400, marginTop: 4 }}>
-                    <InputLabel id="input-type-label">Input Type</InputLabel>
-                    <Select
-                        labelId="input-type-label"
-                        value={inputType}
-                        label="Input Type"
-                        onChange={(e) => setInputType(e.target.value)}
-                    >
-                        <MenuItem value="manual">Manual Input</MenuItem>
-                        <MenuItem value="csv">CSV File Upload</MenuItem>
-                    </Select>
-                </FormControl>
-
-                {inputType === 'manual' ? (
-                    <>
-                        {/* Render dynamic input fields */}
-                        {modelInputs.length > 0 ? (
-                            <>
-                                {modelInputs.map((input, index) => (
-                                    <Box
-                                        key={index}
-                                        sx={{
-                                            display: 'flex',
-                                            gap: 4,
-                                            marginTop: 4,
-                                        }}
-                                    >
-                                        <Typography>{input}</Typography>
-                                        <TextField
-                                            label={input}
-                                            variant="outlined"
-                                            type="number" // Enforce numeric input
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    input,
-                                                    e.target.value
-                                                )
-                                            }
-                                            sx={{ maxWidth: 180 }}
-                                            required
-                                        />
-                                    </Box>
-                                ))}
-
-                                {/* Log Transform Checkbox for Manual Input */}
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={logTransform}
-                                            onChange={handleLogTransformChange}
-                                            name="logTransform"
-                                        />
-                                    }
-                                    label="Apply Log Transform"
-                                    sx={{ marginTop: 2 }}
-                                />
-                            </>
-                        ) : (
-                            <Typography sx={{ marginTop: 4 }}>
-                                No inputs available for the selected model.
-                            </Typography>
-                        )}
-                    </>
-                ) : (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 2,
-                            alignItems: 'center',
-                            marginTop: 4,
-                            maxWidth: 400,
+                        <MenuIcon />
+                    </IconButton>
+                    <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+                        Crash Rate Prediction Dashboard
+                    </Typography>
+                    <Button 
+                        variant="contained" 
+                        color="secondary" 
+                        onClick={userMenuOpen}
+                        sx={{ 
+                            borderRadius: 2,
+                            backgroundColor: 'white', 
+                            color: 'black', //logout button text color
+                            '&:hover': {
+                                backgroundColor: '#e0e0e0',
+                            },
+                            textTransform: 'none',
+                            fontWeight: 500,
                         }}
                     >
-                        <TextField
-                            label="Upload CSV"
-                            variant="outlined"
-                            type="file"
-                            onChange={handleFileChange}
-                            InputLabelProps={{ shrink: true }}
-                            fullWidth
-                            required
-                        />
-                        {/* Log Transform Checkbox for CSV Upload */}
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={logTransform}
-                                    onChange={handleLogTransformChange}
-                                    name="logTransform"
-                                />
-                            }
-                            label="Apply Log Transform"
-                        />
-                    </Box>
-                )}
+                        {user ? user.username : 'User'}
+                    </Button>
+                    
+                    {/*user menu*/}
+                    <Menu
+                        anchorEl={userMenuAnchor}
+                        open={Boolean(userMenuAnchor)}
+                        onClose={userMenuClose}
+                        sx={{ mt: 1 }}
+                    >
+                        <MenuItem onClick={logout}>Logout</MenuItem>
+                    </Menu>
+                    
+                    {/*main menu */}
+                    <Menu
+                        anchorEl={mainMenuAnchor}
+                        open={Boolean(mainMenuAnchor)}
+                        onClose={mainMenuClose}
+                        sx={{ mt: 1 }}
+                    >
+                        <MenuItem onClick={goHome}>Home</MenuItem>
+                        <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
+                        <MenuItem onClick={goModelsList}>View All Models</MenuItem>
+                    </Menu>
+                </Toolbar>
+            </AppBar>
 
-                {/* Display Error */}
-                {error && (
-                    <Typography variant="body1" color="error">
-                        {error}
-                    </Typography>
-                )}
-
-                {/* Submit Button */}
-                <Button
-                    variant="contained"
-                    type="submit"
-                    sx={{ marginTop: 4, maxWidth: 240 }}
-                    disabled={loading || userLoading}
+            <Container maxWidth="md" sx={{ pt: 10, pb: 6 }}>
+                <Card 
+                    elevation={3} 
+                    sx={{ 
+                        borderRadius: 2,
+                        overflow: 'visible',
+                        position: 'relative',
+                        '&::before': {
+                            content: '""',
+                            display: 'block',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '8px',
+                            backgroundColor: '#861F41', //accent card color
+                            borderTopLeftRadius: '8px',
+                            borderTopRightRadius: '8px',
+                        },
+                        mb: 3
+                    }}
                 >
-                    {loading ? 'Submitting...' : 'Submit'}
-                </Button>
-
-                {/* Display Prediction Result */}
-                {prediction !== null && (
-                    <Box sx={{ marginTop: 2 }}>
-                        {Array.isArray(prediction) ? (
-                            <>
-                                <Typography variant="h6">
-                                    Predicted Results:
-                                </Typography>
-                                {prediction.map((pred, index) => (
-                                    <Typography key={index}>{pred}</Typography>
-                                ))}
-                            </>
-                        ) : typeof prediction === 'object' ? (
-                            <>
-                                <Typography variant="h6">
-                                    Prediction Result:
-                                </Typography>
-                                <Typography>{prediction.result}</Typography>
-                            </>
-                        ) : (
-                            <Typography variant="h6">
-                                Prediction: {prediction}
+                    <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                            <IconButton 
+                                onClick={goCollection}
+                                sx={{ mr: 2 }}
+                                aria-label="go back"
+                            >
+                                <ArrowBackIcon />
+                            </IconButton>
+                            <Typography variant="h5" component="h1" sx={{ 
+                                fontWeight: 'bold', 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                color: '#861F41' //add prediciton text color
+                            }}>
+                                <BarChartIcon sx={{ mr: 1 }} /> Add Prediction to Collection
                             </Typography>
+                        </Box>
+                        
+                        {loading || userLoading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            <>
+                                <Box sx={{ mb: 4 }}>
+                                    <Typography variant="h6" color="#861F41" sx={{ fontWeight: 'bold' }}>
+                                        Collection: {collectionName}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Enter prediction inputs below or upload a CSV file
+                                    </Typography>
+                                </Box>
+                                
+                                <Grid container spacing={3}>
+                                    {/*dropdown for choosing the model*/}
+                                    <Grid item xs={12} md={6}>
+                                        <FormControl fullWidth variant="outlined">
+                                            <InputLabel id="model-label">Select Model</InputLabel>
+                                            <Select
+                                                labelId="model-label"
+                                                value={model}
+                                                label="Choose Model"
+                                                onChange={modelChange}
+                                                required
+                                                sx={{ borderRadius: 1 }}
+                                            >
+                                                {models.map((modelItem) => (
+                                                    <MenuItem key={modelItem._id} value={modelItem._id}>
+                                                        {modelItem.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/*dropdown for choosing the input type*/}
+                                    <Grid item xs={12} md={6}>
+                                        <FormControl fullWidth variant="outlined">
+                                            <InputLabel id="input-type-label">Input Type</InputLabel>
+                                            <Select
+                                                labelId="input-type-label"
+                                                value={inputType}
+                                                label="Input Type"
+                                                onChange={(e) => setInputType(e.target.value)}
+                                                sx={{ borderRadius: 1 }}
+                                            >
+                                                <MenuItem value="manual">Manual Input</MenuItem>
+                                                <MenuItem value="csv">CSV File Upload</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                </Grid>
+                                
+                                <Divider sx={{ my: 4 }} />
+                                
+                                {/*selecting the input*/}
+                                <Box 
+                                    component="form" 
+                                    onSubmit={submit} 
+                                    sx={{ 
+                                        mt: 2,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 3,
+                                    }}
+                                >
+                                    {inputType === 'manual' ? (
+                                        <>
+                                            {/*input fields*/}
+                                            {modelInputs.length > 0 ? (
+                                                <>
+                                                    <Grid container spacing={3}>
+                                                        {modelInputs.map((input, index) => (
+                                                            <Grid item xs={12} md={6} key={index}>
+                                                                <TextField
+                                                                    label={input}
+                                                                    variant="outlined"
+                                                                    type="number"
+                                                                    onChange={(e) => inputChange(input, e.target.value)}
+                                                                    fullWidth
+                                                                    required
+                                                                    sx={{ borderRadius: 1 }}
+                                                                    placeholder={`Enter ${input}`}
+                                                                    InputProps={{
+                                                                        sx: { borderRadius: 1 }
+                                                                    }}
+                                                                />
+                                                            </Grid>
+                                                        ))}
+                                                    </Grid>
+
+                                                    {/*manual input log transform*/}
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox
+                                                                checked={logTransform}
+                                                                onChange={logTransformChange}
+                                                                name="logTransform"
+                                                                color="black"
+                                                            />
+                                                        }
+                                                        label="Apply Log Transform"
+                                                    />
+                                                </>
+                                            ) : (
+                                                <Alert severity="info">
+                                                    No inputs available for the selected model. Please select a different model.
+                                                </Alert>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 3,
+                                                p: 3,
+                                                border: '1px dashed #C95B0C',
+                                                borderRadius: 2,
+                                                backgroundColor: '#f8f9fa',
+                                            }}
+                                        >
+                                            <Box sx={{ textAlign: 'center' }}>
+                                                <CloudUploadIcon sx={{ fontSize: 48, color: '#861F41', mb: 2 }} />
+                                                <Typography variant="h6" gutterBottom>
+                                                    Upload CSV File
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                    Upload a CSV file with your prediction data
+                                                </Typography>
+                                            </Box>
+                                            
+                                            <TextField
+                                                variant="outlined"
+                                                type="file"
+                                                onChange={fileChange}
+                                                InputLabelProps={{ shrink: true }}
+                                                fullWidth
+                                                required
+                                                inputProps={{ accept: '.csv' }}
+                                            />
+                                            
+                                            {/*csv upload log transform*/}
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={logTransform}
+                                                        onChange={logTransformChange}
+                                                        name="logTransform"
+                                                        color="primary"
+                                                    />
+                                                }
+                                                label="Apply Log Transform"
+                                            />
+                                        </Box>
+                                    )}
+
+                                    {/*displaying error*/}
+                                    {error && (
+                                        <Alert severity="error" sx={{ mt: 2 }}>
+                                            {error}
+                                        </Alert>
+                                    )}
+
+                                    {/*predict crash rate submit button*/}
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                        <Button
+                                            variant="contained"
+                                            type="submit"
+                                            disabled={submitting || userLoading}
+                                            startIcon={<PlayArrowIcon />}
+                                            sx={{ 
+                                                borderRadius: 2, 
+                                                px: 4, 
+                                                py: 1.2,
+                                                backgroundColor: '#861F41',
+                                                '&:hover': {
+                                                    backgroundColor: '#861F41',
+                                                },
+                                                textTransform: 'none'
+                                            }}
+                                        >
+                                            {submitting ? 'Processing...' : 'Predict Crash Rate'}
+                                        </Button>
+                                    </Box>
+                                </Box>
+                            </>
                         )}
-                    </Box>
-                )}
-            </Box>
+                        
+                        {/*displaying result*/}
+                        {prediction !== null && (
+                            <Box 
+                                sx={{ 
+                                    mt: 4,
+                                    p: 3,
+                                    backgroundColor: '#e8eaf6',
+                                    borderRadius: 2,
+                                    border: '1px solid #c5cae9'
+                                }}
+                            >
+                                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1a237e' }}>
+                                    Prediction Results
+                                </Typography>
+                                
+                                {Array.isArray(prediction) ? (
+                                    <Box>
+                                        {prediction.map((pred, index) => (
+                                            <Typography key={index} sx={{ mb: 1 }}>
+                                                Result {index + 1}: {pred}
+                                            </Typography>
+                                        ))}
+                                    </Box>
+                                ) : typeof prediction === 'object' ? (
+                                    <Typography>
+                                        {prediction.result}
+                                    </Typography>
+                                ) : (
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                                        {prediction}
+                                    </Typography>
+                                )}
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Container>
         </Box>
     )
 }

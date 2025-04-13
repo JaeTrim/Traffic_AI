@@ -1,15 +1,13 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-import mongoose from 'mongoose'
 import User from '@models/User'
 import { NextResponse } from 'next/server'
+import connectToDatabase from '@lib/mongodb' // Import the shared connection utility
 
 export async function POST(req) {
-    const mongoURL = 'mongodb://localhost:27017/users'
-
-    // Connect to MongoDB
+    // Connect to MongoDB using the shared connection utility
     try {
-        await mongoose.connect(mongoURL, {})
+        await connectToDatabase()
         console.log('[AUTH/REGISTER] - Connected to MongoDB')
     } catch (error) {
         console.error('[AUTH/REGISTER] - Error Connecting to MongoDB:', error)
@@ -35,7 +33,6 @@ export async function POST(req) {
             console.log(
                 `[AUTH/REGISTER] - User Already Exists: '${user.username}'`
             )
-            mongoose.connection.close()
             return NextResponse.json(
                 { msg: 'Username Already Taken' },
                 { status: 400 }
@@ -43,7 +40,6 @@ export async function POST(req) {
         }
     } catch (error) {
         console.error('[AUTH/REGISTER] - Error Checking Existing User', error)
-        mongoose.connection.close()
         return NextResponse.json(
             { error: 'Error Checking Existing User' },
             { status: 500 }
@@ -55,7 +51,6 @@ export async function POST(req) {
     try {
         passwordHash = await bcrypt.hash(password, 10)
         if (!passwordHash) {
-            mongoose.connection.close()
             return NextResponse.json(
                 { error: 'Error Hashing Password' },
                 { status: 500 }
@@ -63,7 +58,6 @@ export async function POST(req) {
         }
     } catch (error) {
         console.error('[AUTH/REGISTER] - Error Hashing Password:', error)
-        mongoose.connection.close()
         return NextResponse.json(
             { error: 'Error Hashing Password:' },
             { status: 500 }
@@ -76,15 +70,13 @@ export async function POST(req) {
         newUser = new User({
             username: username,
             password: passwordHash,
-            // password: 'password'
+            role: 'user' // Default role
         })
 
         await newUser.save()
         console.log('[AUTH/REGISTER] - User Created Successfully:', newUser)
-        mongoose.connection.close()
     } catch (error) {
         console.error('[AUTH/REGISTER] - Error Creating User:', error)
-        mongoose.connection.close()
         return NextResponse.json(
             { error: 'Error Creating User' },
             { status: 500 }
@@ -94,14 +86,17 @@ export async function POST(req) {
     // Create JWT token
     try {
         const payload = {
-            id: newUser._id,
+            userId: newUser._id,
+            username: newUser.username
         }
 
         console.log(`[AUTH/REGISTER] - payload: ${JSON.stringify(payload)}`)
 
-        let token = jwt.sign(payload, 'test_secret', { expiresIn: 3600 })
+        // Use the same JWT_SECRET as in your other auth routes
+        const JWT_SECRET = process.env.JWT_SECRET || 'test_secret'
+        let token = jwt.sign(payload, JWT_SECRET, { expiresIn: 3600 })
+        
         if (!token) {
-            mongoose.connection.close()
             return NextResponse.json(
                 { msg: 'Failed to create token' },
                 { status: 500 }
@@ -110,14 +105,12 @@ export async function POST(req) {
 
         console.log(`[AUTH/REGISTER] - Created token: '${token}'`)
 
-        mongoose.connection.close()
         return NextResponse.json(
             { msg: 'registered', token: token },
             { status: 200 }
         )
     } catch (error) {
         console.error('[AUTH/REGISTER] - Error Creating JWT Token')
-        mongoose.connection.close()
         return NextResponse.json(
             { error: 'Error Creating JWT Token' },
             { status: 500 }
