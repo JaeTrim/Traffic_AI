@@ -4,15 +4,17 @@
 .app {
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    color: #333;
 }
 
 .mainContainer {
-    margin-top: 64px; /* Equivalent to marginTop: 8 */
-    padding: 32px;    /* Equivalent to padding: 4 */
-    gap: 32px;        /* Equivalent to gap: 4 */
+    padding: 24px;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    gap: 16px; /* Reduced from 32px to 16px */
 }
 
 /* AppBar Component */
@@ -21,39 +23,71 @@
 }
 
 .userButton {
-    justify-content: flex-end;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.5px;
 }
 
 /* Input Section */
 .uiInputSection {
     display: flex;
     flex-direction: column;
-    gap: 32px; /* Equivalent to gap: 4 */
+    gap: 32px;
+    padding: 24px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .inputRow {
     display: flex;
     flex-direction: row;
-    gap: 32px; /* Equivalent to gap: 4 */
+    gap: 32px;
+    flex-wrap: wrap;
 }
 
 .formControlBox {
     min-width: 180px;
-    max-width: 240px;
+    max-width: 100%;
+    flex: 1;
 }
 
 /* Prediction Result */
 .predictionResult {
-    margin-top: 16px; /* Equivalent to marginTop: 2 */
+    margin-top: 24px;
+    padding: 16px;
+    background-color: #e8eaf6;
+    border-radius: 8px;
+    border: 1px solid #c5cae9;
+    text-align: center;
 }
 
 /* User Log */
 .userLogContainer {
     display: flex;
     flex-direction: column;
-    gap: 16px; /* Equivalent to gap: 2 */
+    gap: 16px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
 .userLogTitle {
-    text-align: left;
+    padding: 20px;
+    color: #fff;
+    background-color: #1a237e;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+    .inputRow {
+        flex-direction: column;
+    }
+
+    .formControlBox {
+        max-width: 100%;
+    }
 }
