@@ -111,6 +111,9 @@ export default function TrainModelPage() {
     setError("");
     setLoading(true);
     try {
+      setModelOutput(null); //closes the results if the training button is pressed
+      setConfirmationMessage(null);
+
       const token = getCookie("token");
       const formData = new FormData();
       formData.append("csv", file);
@@ -152,7 +155,7 @@ export default function TrainModelPage() {
           "CalLength(meters)",
           "CAR_SPEED_",
           "ADT",
-        ])
+        ]),
       );
       formData.append("userId", user?.userId);
       formData.append("modelFile", modelFile);
