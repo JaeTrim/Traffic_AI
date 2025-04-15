@@ -145,7 +145,7 @@ export default function newPage() {
   };
 
   const goModels = () => {
-    router.push("/managemodels");
+    router.push("/managemodel");
     mainMenuClose();
   };
 
