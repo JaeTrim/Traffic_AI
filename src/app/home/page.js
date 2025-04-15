@@ -320,10 +320,10 @@ function UIAppBar() {
         >
           <MenuItem onClick={navigateToAddModel}>Add New Model</MenuItem>
           {/* <MenuItem onClick={goModels}>Manage Models</MenuItem> */}
-          <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
           <MenuItem onClick={navigateToModelsList}>
             Manage and View Models
           </MenuItem>
+          <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
         </Menu>
       </Toolbar>
     </AppBar>
