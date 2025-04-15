@@ -55,6 +55,14 @@ Ensure you are in the `traffic-ai` root directory, then install dependencies:
 npm install
 ```
 
+## Running Next.js
+
+Start the frontend website with:
+
+```bash
+npm run dev
+```
+
 ## Running MongoDB
 
 Ensure you are in the MongoDB directory:
@@ -75,14 +83,6 @@ Start the FastAPI server with:
 
 ```bash
 uvicorn app:app --reload
-```
-
-## Running Next.js
-
-Start the frontend website with:
-
-```bash
-npm run dev
 ```
 
 ## Adding an Admin User
