@@ -5,7 +5,7 @@ A new terminal must be opened when running each framework: MongoDB, FastAPI, and
 
 To access the "add admin user page", you need a root admin user. To add a root admin user, follow the steps under [Adding an Admin User](#adding-an-admin-user).
 
-## Changes Required from Previous Project
+## Setting Up MongoDB
 
 Execute the following command in the MongoDB directory:
 
