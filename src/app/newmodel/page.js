@@ -272,10 +272,10 @@ export default function NewModelPage() {
           >
             <MenuItem onClick={goHome}>Home</MenuItem>
             {/* <MenuItem onClick={goModels}>Manage Models</MenuItem> */}
-            <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
             <MenuItem onClick={navigateToModelsList}>
               Manage and View Models
             </MenuItem>
+            <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
