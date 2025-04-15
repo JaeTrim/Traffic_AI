@@ -125,7 +125,7 @@ export default function Home() {
   const handleDeleteCollection = async (collectionId, collectionName) => {
     if (
       !confirm(
-        `Are you sure you want to delete the collection "${collectionName}"? This action cannot be undone.`,
+        `Are you sure you want to delete the collection "${collectionName}"? This action cannot be undone.`
       )
     ) {
       return;
@@ -145,7 +145,7 @@ export default function Home() {
       }
 
       setCollections(
-        collections.filter((collection) => collection._id !== collectionId),
+        collections.filter((collection) => collection._id !== collectionId)
       );
     } catch (err) {
       console.error("Error deleting collection:", err);
@@ -244,6 +244,11 @@ function UIAppBar() {
     router.push("/trainmodel");
     handleMainMenuClose();
   };
+
+  // const goModels = () => {
+  //   router.push("/managemodel");
+  //   handleMainMenuClose();
+  // };
   return (
     <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "#861F41" }}>
       <Toolbar>
@@ -314,8 +319,11 @@ function UIAppBar() {
           sx={{ mt: 1 }}
         >
           <MenuItem onClick={navigateToAddModel}>Add New Model</MenuItem>
-          <MenuItem onClick={navigateToModelsList}>View All Models</MenuItem>
+          {/* <MenuItem onClick={goModels}>Manage Models</MenuItem> */}
           <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+          <MenuItem onClick={navigateToModelsList}>
+            Manage and View Models
+          </MenuItem>
         </Menu>
       </Toolbar>
     </AppBar>
@@ -564,7 +572,7 @@ function UICollections({
                           onClick={() =>
                             onDeleteCollection(
                               collection._id,
-                              collection.collectionName,
+                              collection.collectionName
                             )
                           }
                         >
@@ -839,4 +847,3 @@ function UIUserLog() {
     </Card>
   );
 }
-
