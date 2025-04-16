@@ -2,14 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import AddIcon from "@mui/icons-material/Add";
-import RemoveIcon from "@mui/icons-material/Remove";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ModelTrainingIcon from "@mui/icons-material/ModelTraining";
-import SaveIcon from "@mui/icons-material/Save";
-
 import {
   Box,
   Typography,
@@ -24,9 +20,6 @@ import {
   Card,
   CardContent,
   Alert,
-  Grid,
-  Paper,
-  Divider,
   Chip,
 } from "@mui/material";
 
@@ -43,7 +36,6 @@ export default function TrainModelPage() {
   const [mainMenuAnchor, setMainMenuAnchor] = useState(null);
   const [modelOutput, setModelOutput] = useState(null);
   const [confirmationMessage, setConfirmationMessage] = useState("");
-  const [mainMenu, setMainMenu] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -69,24 +61,6 @@ export default function TrainModelPage() {
     document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     router.push("/login");
     setUserMenuAnchor(null);
-  };
-
-  const closeMainMenu = () => {
-    setMainMenu(null);
-  };
-
-  const goHome = () => {
-    router.push("/");
-    closeMainMenu();
-  };
-
-  const navigateToModelsList = () => {
-    router.push("/managemodel");
-    closeMainMenu();
-  };
-
-  const addModel = () => {
-    router.push("/newmodel");
   };
 
   const getCookie = (name) => {
@@ -228,35 +202,42 @@ export default function TrainModelPage() {
             onClose={() => setMainMenuAnchor(null)}
             sx={{ mt: 1 }}
           >
-            <MenuItem onClick={goHome}>Home</MenuItem>
-            <MenuItem onClick={addModel}>Add New Model</MenuItem>
-            <MenuItem onClick={navigateToModelsList}>
+            <MenuItem onClick={() => router.push("/")}>Home</MenuItem>
+            <MenuItem onClick={() => router.push("/newmodel")}>
+              Add New Model
+            </MenuItem>
+            <MenuItem onClick={() => router.push("/managemodel")}>
               Manage and View Models
             </MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
-          pt: 10,
-          minHeight: "calc(100vh - 64px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f5f7fa",
-        }}
-      >
+      <Container maxWidth="md" sx={{ pt: 12, pb: 6 }}>
         <Card
           elevation={3}
           sx={{
+            maxWidth: "900px",
+            margin: "0 auto",
             borderRadius: 2,
             overflow: "visible",
-            width: "100%",
-            maxWidth: 700,
+            position: "relative",
+            "&::before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "8px",
+              backgroundColor: "#861F41",
+              borderTopLeftRadius: "8px",
+              borderTopRightRadius: "8px",
+            },
+            mb: 3,
           }}
         >
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: 4 }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
               <IconButton onClick={() => router.push("/")} sx={{ mr: 2 }}>
                 <ArrowBackIcon />
@@ -302,22 +283,82 @@ export default function TrainModelPage() {
               onChange={(e) => setKfoldVal(e.target.value)}
             />
 
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-              <Button
-                variant="contained"
-                component="label"
-                sx={{ backgroundColor: "#861F41" }}
-              >
-                {file ? "Change File" : "Upload CSV"}
-                <input type="file" hidden onChange={fileChange} accept=".csv" />
-              </Button>
-            </Box>
-
-            {file && (
-              <Typography align="center" sx={{ mb: 2 }}>
-                {file.name}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500 }}>
+                Upload CSV
               </Typography>
-            )}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Only CSV files are accepted
+              </Typography>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  padding: 3,
+                  border: "2px dashed #C95B0C",
+                  borderRadius: 2,
+                  backgroundColor: "#f5f5f5",
+                  textAlign: "center",
+                }}
+              >
+                <CloudUploadIcon
+                  sx={{ fontSize: 48, color: "#861F41", mb: 2 }}
+                />
+
+                {file ? (
+                  <Box sx={{ width: "100%" }}>
+                    <Chip
+                      label={file.name}
+                      onDelete={() => setFile(null)}
+                      sx={{
+                        backgroundColor: "#861F41",
+                        color: "white",
+                        mb: 2,
+                      }}
+                    />
+                    <Typography variant="body2" color="black">
+                      File selected ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </Typography>
+                  </Box>
+                ) : (
+                  <>
+                    <Typography variant="body1" sx={{ mb: 1 }}>
+                      Drag and drop your CSV file here
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      or
+                    </Typography>
+                  </>
+                )}
+
+                <Button
+                  variant="contained"
+                  component="label"
+                  sx={{
+                    borderRadius: 2,
+                    backgroundColor: "#861F41",
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: "#6d1b36",
+                    },
+                  }}
+                >
+                  {file ? "Change File" : "Browse Files"}
+                  <input
+                    type="file"
+                    hidden
+                    onChange={fileChange}
+                    accept=".csv"
+                  />
+                </Button>
+              </Box>
+            </Box>
 
             <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
               <Button
@@ -325,7 +366,13 @@ export default function TrainModelPage() {
                 onClick={handleTrain}
                 disabled={loading}
                 startIcon={<ModelTrainingIcon />}
-                sx={{ backgroundColor: "#861F41" }}
+                sx={{
+                  backgroundColor: "#861F41",
+                  textTransform: "none",
+                  "&:hover": {
+                    backgroundColor: "#6d1b36",
+                  },
+                }}
               >
                 {loading ? "Training..." : "Train Model"}
               </Button>
@@ -363,7 +410,7 @@ export default function TrainModelPage() {
             )}
           </CardContent>
         </Card>
-      </Box>
+      </Container>
     </Box>
   );
 }
