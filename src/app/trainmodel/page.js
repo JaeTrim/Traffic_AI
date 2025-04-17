@@ -382,26 +382,54 @@ export default function TrainModelPage() {
             </Box>
 
             {modelOutput && (
-              <Box sx={{ mt: 4 }}>
-                <Typography variant="h6">Training Output</Typography>
-                <pre style={{ whiteSpace: "pre-wrap" }}>
-                  {JSON.stringify(modelOutput, null, 2)}
-                </pre>
-                <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-                  <Button
-                    variant="outlined"
-                    color="success"
-                    onClick={handleAccept}
+              <Box
+                sx={{
+                  mt: 4,
+                  display: "flex",
+                  justifyContent: "center",
+                  width: "100%",
+                }}
+              >
+                <Box sx={{ textAlign: "center", maxWidth: "600px" }}>
+                  <Typography variant="h6">Training Output</Typography>
+                  {/* Display the formatted output */}
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body1">
+                      <strong>Average Train MSE:</strong>{" "}
+                      {modelOutput.result["Average Train MSE"]}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Average Train MAE:</strong>{" "}
+                      {modelOutput.result["Average Train MAE"]}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Average Train R²:</strong>{" "}
+                      {modelOutput.result["Average Train R²"]}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      gap: 2,
+                      mt: 2,
+                    }}
                   >
-                    Accept
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={handleReject}
-                  >
-                    Reject
-                  </Button>
+                    <Button
+                      variant="outlined"
+                      color="success"
+                      onClick={handleAccept}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={handleReject}
+                    >
+                      Reject
+                    </Button>
+                  </Box>
                 </Box>
               </Box>
             )}

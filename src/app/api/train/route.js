@@ -57,7 +57,7 @@ export async function POST(request) {
       headers: {
         "Content-Type": "multipart/form-data",
       },
-      timeout: 150000, //time limit for training of data (can change based on needs)
+      timeout: 1500000, //time limit for training of data (can change based on needs)
     });
 
     const { results } = trainingResponse.data;
