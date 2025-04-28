@@ -96,7 +96,7 @@ def kfold(dataset: pd.DataFrame, epochs: int = 10, n_splits: int = 10):
     avg_mae = np.mean(all_mae)
     avg_r2 = np.mean(all_r2)
 
-    print(f"\n=== Average Training Metrics Across All Folds ===")
+    print(f"\n=== Average Training Metrics Across Training Fold ===")
     print(f"Average Train MSE: {avg_mse:.4f}")
     print(f"Average Train MAE: {avg_mae:.4f}")
     print(f"Average Train R²: {avg_r2:.4f}")
