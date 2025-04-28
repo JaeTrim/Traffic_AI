@@ -96,6 +96,13 @@ export default function TrainModelPage() {
       });
 
       const data = await response.json();
+
+      if (!response.ok) {
+        // If server sends { error: "Something wrong" } or { message: "..." }
+        throw new Error(
+          data.error || data.message || "Training failed with server error.",
+        );
+      }
       router.push(
         `/result?output=${encodeURIComponent(JSON.stringify(data))}&modelName=${encodeURIComponent(modelName)}`,
       );
