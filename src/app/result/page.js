@@ -1,9 +1,34 @@
 "use client";
 
+//maroon: 861F41
+//orange: C95B0C
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Box, Typography, Button, Container, Alert } from "@mui/material";
 import toast from "react-hot-toast";
+import MenuIcon from "@mui/icons-material/Menu";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ModelTrainingIcon from "@mui/icons-material/ModelTraining";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+
+import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  Alert,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Menu,
+  MenuItem,
+  Card,
+  CardContent,
+  CircularProgress,
+  Divider,
+  Paper,
+} from "@mui/material";
 
 export default function ResultPage() {
   const router = useRouter();
@@ -12,6 +37,11 @@ export default function ResultPage() {
   const [modelName, setModelName] = useState("");
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
+  // Menu states
+  const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  const [mainMenuAnchor, setMainMenuAnchor] = useState(null);
 
   useEffect(() => {
     try {
@@ -38,6 +68,7 @@ export default function ResultPage() {
   }, [searchParams]);
 
   const handleAccept = async () => {
+    setLoading(true);
     const toastId = toast.loading("Saving model...");
     try {
       const response = await fetch("http://127.0.0.1:8000/download_model");
@@ -74,6 +105,8 @@ export default function ResultPage() {
     } catch (err) {
       toast.error(err.message || "Model save failed.", { id: toastId });
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,61 +115,387 @@ export default function ResultPage() {
     router.push("/trainmodel");
   };
 
-  if (error) return <Alert severity="error">{error}</Alert>;
+  // Menu handlers
+  const userMenuOpen = (event) => {
+    setUserMenuAnchor(event.currentTarget);
+  };
 
-  if (!modelOutput) return <Typography>Loading...</Typography>;
+  const userMenuClose = () => {
+    setUserMenuAnchor(null);
+  };
+
+  const mainMenuOpen = (event) => {
+    setMainMenuAnchor(event.currentTarget);
+  };
+
+  const mainMenuClose = () => {
+    setMainMenuAnchor(null);
+  };
+
+  const logout = () => {
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    router.push("/login");
+    userMenuClose();
+  };
+
+  const goHome = () => {
+    router.push("/");
+    mainMenuClose();
+  };
+
+  const goModels = () => {
+    router.push("/managemodel");
+    mainMenuClose();
+  };
+
+  const goNewModel = () => {
+    router.push("/newmodel");
+    mainMenuClose();
+  };
+
+  const goTrainModel = () => {
+    router.push("/trainmodel");
+    mainMenuClose();
+  };
+
+  if (error) {
+    return (
+      <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f7fa" }}>
+        <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "#861F41" }}>
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              sx={{ mr: 2 }}
+              onClick={mainMenuOpen}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+              Crash Rate Prediction Dashboard
+            </Typography>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={userMenuOpen}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: "white",
+                color: "black",
+                "&:hover": {
+                  backgroundColor: "#e0e0e0",
+                },
+                textTransform: "none",
+                fontWeight: 500,
+              }}
+            >
+              {user ? user.username : "User"}
+            </Button>
+          </Toolbar>
+        </AppBar>
+
+        <Container maxWidth="md" sx={{ pt: 12, pb: 6 }}>
+          <Alert severity="error">{error}</Alert>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (!modelOutput) {
+    return (
+      <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f7fa" }}>
+        <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "#861F41" }}>
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              sx={{ mr: 2 }}
+              onClick={mainMenuOpen}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+              Crash Rate Prediction Dashboard
+            </Typography>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={userMenuOpen}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: "white",
+                color: "black",
+                "&:hover": {
+                  backgroundColor: "#e0e0e0",
+                },
+                textTransform: "none",
+                fontWeight: 500,
+              }}
+            >
+              {user ? user.username : "User"}
+            </Button>
+          </Toolbar>
+        </AppBar>
+
+        <Container maxWidth="md" sx={{ pt: 12, pb: 6, display: "flex", justifyContent: "center" }}>
+          <CircularProgress />
+        </Container>
+      </Box>
+    );
+  }
 
   return (
-    <Container maxWidth="sm" sx={{ pt: 10 }}>
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          gap: 2,
-        }}
-      >
-        <Typography
-          variant="h3"
-          sx={{ textDecoration: "underline" }}
-          gutterBottom
+    <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f7fa" }}>
+      {/* App Bar */}
+      <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "#861F41" }}>
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+            onClick={mainMenuOpen}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+            Crash Rate Prediction Dashboard
+          </Typography>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={userMenuOpen}
+            sx={{
+              borderRadius: 2,
+              backgroundColor: "white",
+              color: "black",
+              "&:hover": {
+                backgroundColor: "#e0e0e0",
+              },
+              textTransform: "none",
+              fontWeight: 500,
+            }}
+          >
+            {user ? user.username : "User"}
+          </Button>
+
+          {/* User Menu */}
+          <Menu
+            anchorEl={userMenuAnchor}
+            open={Boolean(userMenuAnchor)}
+            onClose={userMenuClose}
+            sx={{ mt: 1 }}
+          >
+            <MenuItem onClick={logout}>Logout</MenuItem>
+          </Menu>
+
+          {/* Main Menu */}
+          <Menu
+            anchorEl={mainMenuAnchor}
+            open={Boolean(mainMenuAnchor)}
+            onClose={mainMenuClose}
+            sx={{ mt: 1 }}
+          >
+            <MenuItem onClick={goHome}>Home</MenuItem>
+            <MenuItem onClick={goNewModel}>Add New Model</MenuItem>
+            <MenuItem onClick={goModels}>Manage and View Models</MenuItem>
+            <MenuItem onClick={goTrainModel}>Train Model</MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="md" sx={{ pt: 10, pb: 6 }}>
+        <Card
+          elevation={3}
+          sx={{
+            borderRadius: 2,
+            overflow: "visible",
+            position: "relative",
+            "&::before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "8px",
+              backgroundColor: "#861F41", // accent color
+              borderTopLeftRadius: "8px",
+              borderTopRightRadius: "8px",
+            },
+          }}
         >
-          Training Results
-        </Typography>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
+              <IconButton
+                onClick={() => router.push("/trainmodel")}
+                sx={{ mr: 2 }}
+                aria-label="go back"
+              >
+                <ArrowBackIcon />
+              </IconButton>
+              <Typography
+                variant="h5"
+                component="h1"
+                sx={{
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  color: "#861F41",
+                }}
+              >
+                <ModelTrainingIcon sx={{ mr: 1 }} /> Training Results
+              </Typography>
+            </Box>
 
-        <Typography variant="h5">
-          <strong>Average Train MSE:</strong>{" "}
-          {modelOutput.result?.["Average Train MSE"]}
-        </Typography>
-        <Typography variant="h5">
-          <strong>Average Train MAE:</strong>{" "}
-          {modelOutput.result?.["Average Train MAE"]}
-        </Typography>
-        <Typography variant="h5">
-          <strong>Average Train R²:</strong>{" "}
-          {modelOutput.result?.["Average Train R²"]}
-        </Typography>
+            <Box
+              sx={{
+                mb: 4,
+                p: 3,
+                backgroundColor: "#f8f9fa",
+                borderRadius: 2,
+                border: "1px solid #e0e0e0",
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: "bold", color: "#861F41", mb: 2 }}
+              >
+                {modelName}
+              </Typography>
+              
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Review the model performance metrics below. If you are satisfied with the results, 
+                click Accept to save the model. Otherwise, click Reject to go back to the training page.
+              </Typography>
+            </Box>
 
-        <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
-          <Button
-            variant="outlined"
-            color="success"
-            size="large"
-            onClick={handleAccept}
-          >
-            Accept
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            size="large"
-            onClick={handleReject}
-          >
-            Reject
-          </Button>
-        </Box>
-      </Box>
-    </Container>
+            <Paper
+              elevation={2}
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                backgroundColor: "#fff",
+                mb: 4,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ color: "#861F41", mb: 3, fontWeight: 500 }}
+              >
+                Performance Metrics
+              </Typography>
+              
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box sx={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  p: 2,
+                  borderRadius: 1,
+                  backgroundColor: "#f5f5f5" 
+                }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                    Average Train MSE:
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                    {modelOutput.result?.["Average Train MSE"]}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  p: 2,
+                  borderRadius: 1,
+                  backgroundColor: "#f5f5f5" 
+                }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                    Average Train MAE:
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                    {modelOutput.result?.["Average Train MAE"]}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  p: 2,
+                  borderRadius: 1,
+                  backgroundColor: "#f5f5f5" 
+                }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                    Average Train R²:
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                    {modelOutput.result?.["Average Train R²"]}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Box sx={{ 
+              display: "flex", 
+              justifyContent: "center", 
+              gap: 3,
+              mt: 2
+            }}>
+              <Button
+                variant="contained"
+                color="success"
+                size="large"
+                startIcon={<CheckCircleIcon />}
+                onClick={handleAccept}
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  py: 1,
+                  px: 3,
+                  backgroundColor: "#43a047",
+                  "&:hover": {
+                    backgroundColor: "#2e7d32",
+                  },
+                  textTransform: "none",
+                  fontWeight: 500,
+                }}
+              >
+                {loading ? "Saving..." : "Accept Model"}
+              </Button>
+              
+              <Button
+                variant="outlined"
+                color="error"
+                size="large"
+                startIcon={<CancelIcon />}
+                onClick={handleReject}
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  py: 1,
+                  px: 3,
+                  borderColor: "#d32f2f",
+                  color: "#d32f2f",
+                  "&:hover": {
+                    backgroundColor: "#ffebee",
+                    borderColor: "#c62828",
+                  },
+                  textTransform: "none",
+                  fontWeight: 500,
+                }}
+              >
+                Reject Model
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 }
