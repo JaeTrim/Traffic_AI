@@ -97,28 +97,42 @@ export default function ResultPage() {
           gap: 2,
         }}
       >
-        <Typography variant="h5" gutterBottom>
+        <Typography
+          variant="h3"
+          sx={{ textDecoration: "underline" }}
+          gutterBottom
+        >
           Training Results
         </Typography>
 
-        <Typography variant="body1">
+        <Typography variant="h5">
           <strong>Average Train MSE:</strong>{" "}
           {modelOutput.result?.["Average Train MSE"]}
         </Typography>
-        <Typography variant="body1">
+        <Typography variant="h5">
           <strong>Average Train MAE:</strong>{" "}
           {modelOutput.result?.["Average Train MAE"]}
         </Typography>
-        <Typography variant="body1">
+        <Typography variant="h5">
           <strong>Average Train R²:</strong>{" "}
           {modelOutput.result?.["Average Train R²"]}
         </Typography>
 
         <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
-          <Button variant="outlined" color="success" onClick={handleAccept}>
+          <Button
+            variant="outlined"
+            color="success"
+            size="large"
+            onClick={handleAccept}
+          >
             Accept
           </Button>
-          <Button variant="outlined" color="error" onClick={handleReject}>
+          <Button
+            variant="outlined"
+            color="error"
+            size="large"
+            onClick={handleReject}
+          >
             Reject
           </Button>
         </Box>
