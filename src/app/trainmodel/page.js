@@ -8,11 +8,10 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ModelTrainingIcon from "@mui/icons-material/ModelTraining";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import toast from "react-hot-toast";
 
 import {
   Box,
@@ -20,241 +19,180 @@ import {
   Button,
   TextField,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   AppBar,
   Toolbar,
   Menu,
+  MenuItem,
   Container,
   Card,
   CardContent,
   Alert,
-  Grid,
-  Paper,
-  Divider,
-  CircularProgress,
   Chip,
+  Divider,
+  Grid,
+  CircularProgress,
 } from "@mui/material";
 
 export default function TrainModelPage() {
+  const router = useRouter();
   const [modelName, setModelName] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [dataFile, setDataFile] = useState(null);
-  const [models, setModels] = useState([]);
+  const [epochVal, setEpochVal] = useState("");
+  const [kfoldVal, setKfoldVal] = useState("");
+  const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingModels, setLoadingModels] = useState(true);
-  const router = useRouter();
-
   const [user, setUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [mainMenuAnchor, setMainMenuAnchor] = useState(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUser = async () => {
       try {
         const res = await fetch("/api/auth/user", {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch user data.");
-        }
-
+        if (!res.ok) throw new Error("Failed to fetch user data");
         const data = await res.json();
-        setUser({
-          userId: data.userId,
-          username: data.username,
-          role: data.role
-        });
         
-        // Redirect if not admin
+        // Set the user data
+        setUser(data);
+        
+        // Check if user is not an admin, redirect to home page
         if (data.role !== "admin") {
-          toast.error("You don't have permission to train models.");
-          router.push("/");
+          // Display an error message briefly before redirecting
+          setError("You don't have permission to access this page.");
+          // Redirect after a brief delay to allow the error message to be seen
+          setTimeout(() => {
+            router.push("/");
+          }, 1500);
         }
       } catch (err) {
-        console.error("Error fetching user data:", err);
+        setError(err.message || "Authentication failed");
+        // Redirect to login on auth error
+        setTimeout(() => {
+          router.push("/login");
+        }, 1500);
       } finally {
         setUserLoading(false);
       }
     };
-
-    fetchUserData();
+    
+    fetchUser();
   }, [router]);
-
-  useEffect(() => {
-    const fetchModels = async () => {
-      if (!user) return;
-      
-      try {
-        setLoadingModels(true);
-        const response = await fetch("/api/models", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch models.");
-        }
-        
-        const data = await response.json();
-        setModels(data);
-      } catch (err) {
-        console.error("Error fetching models:", err);
-        setError(err.message || "Failed to fetch models.");
-      } finally {
-        setLoadingModels(false);
-      }
-    };
-    
-    if (user) {
-      fetchModels();
-    }
-  }, [user]);
-
-  const isAdmin = user && user.role === "admin";
-
-  const handleModelChange = (event) => {
-    setSelectedModel(event.target.value);
+  
+  const logout = () => {
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    router.push("/login");
+    setUserMenuAnchor(null);
   };
-
-  const handleNameChange = (event) => {
-    setModelName(event.target.value);
+  
+  const getCookie = (name) => {
+    if (typeof window === "undefined") return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
   };
-
-  const handleFileChange = (event) => {
-    if (event.target.files && event.target.files.length > 0) {
-      setDataFile(event.target.files[0]);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Check admin again for security
-    if (!isAdmin) {
-      toast.error("You don't have permission to train models.");
-      return;
-    }
-    
-    if (!selectedModel) {
-      setError("Please select a model.");
-      return;
-    }
-    
-    if (!modelName.trim()) {
-      setError("Model name is required.");
-      return;
-    }
-    
-    if (!dataFile) {
-      setError("Training data file is required.");
-      return;
-    }
+  
+  const handleTrain = async () => {
+    if (!modelName.trim()) return setError("Model name is required.");
+    if (!file) return setError("CSV file is required.");
+    const epoch = Number(epochVal);
+    const kfold = Number(kfoldVal);
+    if (!epochVal || !Number.isInteger(epoch) || epoch < 1)
+      return setError("Epoch must be integer >= 1");
+    if (!kfoldVal || !Number.isInteger(kfold) || kfold < 1)
+      return setError("K-Fold must be integer >= 1");
     
     setError("");
     setLoading(true);
     
     try {
+      const token = getCookie("token");
       const formData = new FormData();
-      formData.append("baseModelId", selectedModel);
+      formData.append("csv", file);
+      formData.append("epoch", epochVal);
+      formData.append("kfold", kfoldVal);
       formData.append("newModelName", modelName);
-      formData.append("trainingData", dataFile);
-      formData.append("userId", user.userId);
       
-      const response = await fetch("http://127.0.0.1:8000/train", {
+      const response = await fetch("/api/train", {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       
+      const data = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Training failed.");
+        // If server sends { error: "Something wrong" } or { message: "..." }
+        throw new Error(
+          data.error || data.message || "Training failed with server error.",
+        );
       }
       
-      const result = await response.json();
-      
-      // Redirect to results page with output data
-      router.push(`/resultpage?output=${encodeURIComponent(JSON.stringify(result))}&modelName=${encodeURIComponent(modelName)}`);
+      router.push(
+        `/result?output=${encodeURIComponent(JSON.stringify(data))}&modelName=${encodeURIComponent(modelName)}`,
+      );
     } catch (err) {
-      console.error("Error during training:", err);
-      setError(err.message || "Failed to train model.");
+      setError(err.message || "Training failed.");
+    } finally {
       setLoading(false);
     }
   };
-
-  const userMenuOpen = (event) => {
-    setUserMenuAnchor(event.currentTarget);
+  
+  const fileChange = (e) => {
+    if (e.target.files?.length > 0) setFile(e.target.files[0]);
   };
-
-  const userMenuClose = () => {
-    setUserMenuAnchor(null);
-  };
-
-  const mainMenuOpen = (event) => {
-    setMainMenuAnchor(event.currentTarget);
-  };
-
-  const mainMenuClose = () => {
-    setMainMenuAnchor(null);
-  };
-
-  const logout = () => {
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push("/login");
-    userMenuClose();
-  };
-
-  const goHome = () => {
-    router.push("/");
-    mainMenuClose();
-  };
-
-  const goAddModel = () => {
-    if (!isAdmin) {
-      toast.error("You don't have permission to add models.");
-      return;
-    }
-    router.push("/newmodel");
-    mainMenuClose();
-  };
-
-  const goModelsList = () => {
-    router.push("/managemodel");
-    mainMenuClose();
-  };
-
+  
+  const isAdmin = user && user.role === "admin";
+  
+  // Show loading indicator while checking user authentication
   if (userLoading) {
     return (
-      <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f7fa", display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <CircularProgress />
+      <Box 
+        sx={{ 
+          minHeight: "100vh", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center",
+          backgroundColor: "#f5f7fa" 
+        }}
+      >
+        <CircularProgress size={60} thickness={4} sx={{ color: "#861F41" }} />
       </Box>
     );
   }
-
-  // Only allow admin access
+  
+  // Prevent non-admin users from viewing the page content
   if (!isAdmin) {
-    return null; // Router will redirect in useEffect
+    return (
+      <Box 
+        sx={{ 
+          minHeight: "100vh", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center",
+          backgroundColor: "#f5f7fa",
+          flexDirection: "column",
+          p: 3 
+        }}
+      >
+        <Alert 
+          severity="error" 
+          sx={{ mb: 3, maxWidth: 500 }}
+        >
+          You don't have permission to access this page. Redirecting...
+        </Alert>
+        <CircularProgress size={40} thickness={4} sx={{ color: "#861F41" }} />
+      </Box>
+    );
   }
-
+  
+  // The rest of your component for admin users only
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        backgroundColor: "#f5f7fa",
-      }}
-    >
+    <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f7fa" }}>
       <AppBar
         position="fixed"
         elevation={3}
@@ -264,48 +202,42 @@ export default function TrainModelPage() {
           <IconButton
             edge="start"
             color="inherit"
-            aria-label="menu"
+            onClick={(e) => setMainMenuAnchor(e.currentTarget)}
             sx={{ mr: 2 }}
-            onClick={mainMenuOpen}
           >
             <MenuIcon />
           </IconButton>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, fontWeight: "bold" }}
-          >
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
             Crash Rate Prediction Dashboard
           </Typography>
           <Button
             variant="contained"
             color="secondary"
-            onClick={userMenuOpen}
+            onClick={(e) => setUserMenuAnchor(e.currentTarget)}
             sx={{
               borderRadius: 2,
               backgroundColor: "white",
               color: "black",
-              "&:hover": {
-                backgroundColor: "#e0e0e0",
-              },
               textTransform: "none",
               fontWeight: 500,
+              "&:hover": { backgroundColor: "#e0e0e0" },
             }}
           >
-            {user ? user.username : "User"}
+            {user?.username || "User"}
           </Button>
-
+          
+          {/* User menu */}
           <Menu
             anchorEl={userMenuAnchor}
             open={Boolean(userMenuAnchor)}
-            onClose={userMenuClose}
+            onClose={() => setUserMenuAnchor(null)}
             sx={{ mt: 1 }}
           >
             {isAdmin && (
               <MenuItem
                 onClick={() => {
                   router.push("/admin");
-                  userMenuClose();
+                  setUserMenuAnchor(null);
                 }}
                 sx={{
                   color: "#861F41",
@@ -318,46 +250,53 @@ export default function TrainModelPage() {
             )}
             <MenuItem onClick={logout}>Logout</MenuItem>
           </Menu>
-
+          
+          {/* Main menu */}
           <Menu
             anchorEl={mainMenuAnchor}
             open={Boolean(mainMenuAnchor)}
-            onClose={mainMenuClose}
+            onClose={() => setMainMenuAnchor(null)}
             sx={{ mt: 1 }}
           >
-            <MenuItem onClick={goHome}>Home</MenuItem>
+            <MenuItem onClick={() => router.push("/")}>Home</MenuItem>
             {isAdmin ? (
               <>
-                <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
-                <MenuItem onClick={goModelsList}>Manage Models</MenuItem>
+                <MenuItem onClick={() => router.push("/newmodel")}>
+                  Add New Model
+                </MenuItem>
+                <MenuItem onClick={() => router.push("/managemodel")}>
+                  Manage Models
+                </MenuItem>
               </>
             ) : (
-              <MenuItem onClick={goModelsList}>View Models</MenuItem>
+              <MenuItem onClick={() => router.push("/managemodel")}>
+                View Models
+              </MenuItem>
             )}
           </Menu>
         </Toolbar>
       </AppBar>
-
+      
       <Container maxWidth="md" sx={{ pt: 10, pb: 6 }}>
-        <Card
-          elevation={3}
-          sx={{
+        <Card 
+          elevation={3} 
+          sx={{ 
             borderRadius: 2,
-            overflow: "visible",
-            position: "relative",
+            overflow: 'visible',
+            position: 'relative',
             "&::before": {
               content: '""',
-              display: "block",
-              position: "absolute",
+              display: 'block',
+              position: 'absolute',
               top: 0,
               left: 0,
-              width: "100%",
-              height: "8px",
-              backgroundColor: "#861F41",
-              borderTopLeftRadius: "8px",
-              borderTopRightRadius: "8px",
+              width: '100%',
+              height: '8px',
+              backgroundColor: "#861F41", // accent card color
+              borderTopLeftRadius: '8px',
+              borderTopRightRadius: '8px',
             },
-            mb: 3,
+            mb: 3
           }}
         >
           <CardContent sx={{ p: 3 }}>
@@ -376,175 +315,207 @@ export default function TrainModelPage() {
                   fontWeight: "bold",
                   display: "flex",
                   alignItems: "center",
-                  color: "#861F41",
+                  color: "#861F41", // title text color
                 }}
               >
                 <ModelTrainingIcon sx={{ mr: 1 }} /> Train Model
               </Typography>
             </Box>
-
-            <Box component="form" onSubmit={handleSubmit}>
-              {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  {error}
-                </Alert>
-              )}
-              
-              <Box sx={{ mb: 4 }}>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ mb: 2, fontWeight: 500 }}
-                >
-                  Select Base Model
+            
+            {/* Display errors */}
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ mb: 3 }}
+                onClose={() => setError("")}
+              >
+                {error}
+              </Alert>
+            )}
+            
+            <Box component="form" onSubmit={(e) => { e.preventDefault(); handleTrain(); }}>
+              {/* New model name */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body1" sx={{ mb: 1, fontWeight: "medium" }}>
+                  New Model Name *
                 </Typography>
-                
-                {loadingModels ? (
-                  <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
-                    <CircularProgress size={30} />
-                  </Box>
-                ) : models.length === 0 ? (
-                  <Alert severity="info" sx={{ mb: 3 }}>
-                    No models available. Please add a model first.
-                  </Alert>
-                ) : (
-                  <FormControl fullWidth variant="outlined" sx={{ mb: 3 }}>
-                    <InputLabel id="model-select-label">Base Model</InputLabel>
-                    <Select
-                      labelId="model-select-label"
-                      id="model-select"
-                      value={selectedModel}
-                      onChange={handleModelChange}
-                      label="Base Model"
-                      required
-                      sx={{ borderRadius: 1 }}
-                    >
-                      {models.map((model) => (
-                        <MenuItem key={model._id} value={model._id}>
-                          {model.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
+                <TextField
+                  variant="outlined"
+                  fullWidth
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
+                  required
+                  placeholder="Enter a name for your newly trained model"
+                  InputProps={{
+                    sx: { borderRadius: 1 }
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Enter a name for your newly trained model
+                </Typography>
               </Box>
               
-              <Divider sx={{ my: 3 }} />
-              
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ mb: 1, fontWeight: 500 }}
-                  >
-                    New Model Name
+              {/* Training parameters side by side */}
+              <Grid container spacing={3} sx={{ mb: 3 }}>
+                {/* Epochs */}
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body1" sx={{ mb: 1, fontWeight: "medium" }}>
+                    Epochs *
                   </Typography>
                   <TextField
                     variant="outlined"
                     fullWidth
-                    value={modelName}
-                    onChange={handleNameChange}
-                    placeholder="Enter name for trained model"
+                    type="number"
+                    value={epochVal}
+                    onChange={(e) => setEpochVal(e.target.value)}
                     required
+                    placeholder="1"
+                    inputProps={{ min: 1 }}
                     InputProps={{
-                      sx: { borderRadius: 1 },
+                      sx: { borderRadius: 1 }
                     }}
-                    sx={{ mb: 3 }}
                   />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Number of training epochs (must be ≥ 1)
+                  </Typography>
+                </Grid>
+                
+                {/* K-Fold */}
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body1" sx={{ mb: 1, fontWeight: "medium" }}>
+                    K-Fold *
+                  </Typography>
+                  <TextField
+                    variant="outlined"
+                    fullWidth
+                    type="number"
+                    value={kfoldVal}
+                    onChange={(e) => setKfoldVal(e.target.value)}
+                    required
+                    placeholder="2"
+                    inputProps={{ min: 1 }}
+                    InputProps={{
+                      sx: { borderRadius: 1 }
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    K-Fold cross validation value (must be ≥ 1)
+                  </Typography>
                 </Grid>
               </Grid>
               
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500 }}>
+              <Divider sx={{ my: 4 }} />
+              
+              {/* File upload */}
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: "500" }}>
                   Upload Training Data
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Upload CSV file with training data
-                </Typography>
-
+                
                 <Box
                   sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    padding: 3,
-                    border: "2px dashed #C95B0C",
+                    border: '1px dashed #C95B0C',
                     borderRadius: 2,
-                    backgroundColor: "#f5f5f5",
-                    textAlign: "center",
+                    p: 4,
+                    textAlign: 'center',
+                    backgroundColor: '#ffffff',
+                    minHeight: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
-                  <CloudUploadIcon
-                    sx={{ fontSize: 48, color: "#861F41", mb: 2 }}
-                  />
-
-                  {dataFile ? (
-                    <Box sx={{ width: "100%" }}>
-                      <Chip
-                        label={dataFile.name}
-                        color="primary"
-                        onDelete={() => setDataFile(null)}
+                  {file ? (
+                    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => setFile(null)}
                         sx={{ mb: 2 }}
-                      />
-                      <Typography variant="body2" color="primary">
-                        File selected (
-                        {(dataFile.size / 1024 / 1024).toFixed(2)} MB)
+                      >
+                        CLEAR FILE
+                      </Button>
+                      
+                      <Typography variant="body1" sx={{ mb: 1 }}>
+                        File selected ({(file.size / 1024 / 1024).toFixed(2)} MB)
                       </Typography>
+                      
+                      <Button
+                        variant="contained"
+                        sx={{
+                          mt: 2,
+                          borderRadius: 0,
+                          backgroundColor: "#861F41",
+                          "&:hover": {
+                            backgroundColor: "#700a30",
+                          },
+                        }}
+                        component="label"
+                      >
+                        CHANGE FILE
+                        <input
+                          type="file"
+                          hidden
+                          onChange={fileChange}
+                          accept=".csv"
+                        />
+                      </Button>
                     </Box>
                   ) : (
                     <>
-                      <Typography variant="body1" sx={{ mb: 1 }}>
+                      <CloudUploadIcon sx={{ fontSize: 64, color: '#861F41', mb: 2 }} />
+                      
+                      <Typography variant="h6" gutterBottom>
                         Drag and drop your CSV file here
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
+                      
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary" 
                         sx={{ mb: 2 }}
                       >
                         or
                       </Typography>
+                      
+                      <Button
+                        variant="contained"
+                        component="label"
+                        sx={{
+                          borderRadius: 0,
+                          backgroundColor: "#861F41",
+                          "&:hover": {
+                            backgroundColor: "#700a30",
+                          },
+                        }}
+                      >
+                        Browse Files
+                        <input
+                          type="file"
+                          hidden
+                          onChange={fileChange}
+                          accept=".csv"
+                        />
+                      </Button>
                     </>
                   )}
-
-                  <Button
-                    variant="contained"
-                    component="label"
-                    sx={{
-                      borderRadius: 2,
-                      backgroundColor: "#861F41",
-                      "&:hover": {
-                        backgroundColor: "#861F41",
-                      },
-                      textTransform: "none",
-                    }}
-                  >
-                    {dataFile ? "Change File" : "Browse Files"}
-                    <input
-                      type="file"
-                      hidden
-                      onChange={handleFileChange}
-                      accept=".csv"
-                    />
-                  </Button>
                 </Box>
               </Box>
-
+              
+              {/* Submit button */}
               <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
                 <Button
                   variant="contained"
                   type="submit"
-                  disabled={loading || !selectedModel || !modelName || !dataFile}
+                  disabled={loading}
                   startIcon={<PlayArrowIcon />}
                   sx={{
                     px: 4,
                     py: 1.2,
-                    borderRadius: 2,
-                    backgroundColor: "#C95B0C",
+                    borderRadius: 0,
+                    backgroundColor: "#861F41", // maroon button to match the theme
                     "&:hover": {
-                      backgroundColor: "#C95B0C",
+                      backgroundColor: "#700a30",
                     },
                     textTransform: "none",
                     fontWeight: 500,
