@@ -40,23 +40,21 @@ def build_and_compile_model(norm):
     return model
 
 def kfold(dataset: pd.DataFrame, epochs: int = 10, n_splits: int = 10):
+    dataset = dataset.copy()
     dataset.dropna(inplace=True)
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-    train_results = {}
 
-    all_mse, all_mae, all_r2 = [], [], []
+    all_train_mse, all_train_mae, all_train_r2 = [], [], []
+    all_test_mse, all_test_mae, all_test_r2 = [], [], []
 
     epsilon = 1e-6
-    dnn_model = None  # Will build one model for each fold
 
     for i, (train_index, test_index) in enumerate(kf.split(dataset)):
-        dataset = dataset.copy()
         train_dataset = dataset.iloc[train_index]
-        test_dataset = dataset.iloc[test_index]  # Kept but not used for metrics
+        test_dataset = dataset.iloc[test_index]
 
+        # Transform training data
         train_transform = train_dataset.copy()
-
-        # Log transform selected columns in training data only
         for col in ['CountStation', 'Weaving', 'Lanes', 'Curvature(degrees/100feet)',
                     'CalLength(meters)', 'CAR_SPEED_', 'ADT']:
             train_transform[f'Log {col}'] = np.log(train_transform[col] + epsilon)
@@ -65,48 +63,72 @@ def kfold(dataset: pd.DataFrame, epochs: int = 10, n_splits: int = 10):
         train_features = train_transform.copy()
         train_labels = train_features.pop('Crashes')
 
-        # Normalization based only on training features
+        # Normalize based on training features
         normalizer = tf.keras.layers.Normalization(axis=-1)
         normalizer.adapt(np.array(train_features))
 
-        # Build and train model
+        # Build and train the model
         dnn_model = build_and_compile_model(normalizer)
         dnn_model.fit(
             train_features,
             train_labels,
             validation_split=0.2,
             epochs=epochs,
-            verbose=0  # Set to 1 if you want progress output
+            verbose=0
         )
 
+        # Train predictions and metrics
         y_pred_train = dnn_model.predict(train_features).flatten()
+        mse_train = np.mean((y_pred_train - train_labels) ** 2)
+        mae_train = np.mean(abs(y_pred_train - train_labels))
+        r2_train = r2_score(train_labels, y_pred_train)
 
-        mse = np.mean((y_pred_train - train_labels) ** 2)
-        mae = np.mean(abs(y_pred_train - train_labels))
-        r2 = r2_score(train_labels, y_pred_train)
+        all_train_mse.append(mse_train)
+        all_train_mae.append(mae_train)
+        all_train_r2.append(r2_train)
 
-        all_mse.append(mse)
-        all_mae.append(mae)
-        all_r2.append(r2)
+        # Transform test data
+        test_transform = test_dataset.copy()
+        for col in ['CountStation', 'Weaving', 'Lanes', 'Curvature(degrees/100feet)',
+                    'CalLength(meters)', 'CAR_SPEED_', 'ADT']:
+            test_transform[f'Log {col}'] = np.log(test_transform[col] + epsilon)
+            del test_transform[col]
 
-        train_results[f"Fold {i+1}"] = {"Train MSE": mse, "Train MAE": mae, "Train R²": r2}
-        print(f"Fold {i+1} - Train MSE: {mse:.4f}, MAE: {mae:.4f}, R^2: {r2:.4f}")
+        test_features = test_transform.copy()
+        test_labels = test_features.pop('Crashes')
 
-    avg_mse = np.mean(all_mse)
-    avg_mae = np.mean(all_mae)
-    avg_r2 = np.mean(all_r2)
+        # Test predictions and metrics
+        y_pred_test = dnn_model.predict(test_features).flatten()
+        mse_test = np.mean((y_pred_test - test_labels) ** 2)
+        mae_test = np.mean(abs(y_pred_test - test_labels))
+        r2_test = r2_score(test_labels, y_pred_test)
 
-    print(f"\n=== Average Training Metrics Across Training Fold ===")
-    print(f"Average Train MSE: {avg_mse:.4f}")
-    print(f"Average Train MAE: {avg_mae:.4f}")
-    print(f"Average Train R²: {avg_r2:.4f}")
+        all_test_mse.append(mse_test)
+        all_test_mae.append(mae_test)
+        all_test_r2.append(r2_test)
 
-    dnn_model.save("dnnmodel.keras")
+        print(f"=== Fold {i+1} ===")
+        print(f"Train -> MSE: {mse_train:.4f}, MAE: {mae_train:.4f}, R²: {r2_train:.4f}")
+        print(f"Test  -> MSE: {mse_test:.4f}, MAE: {mae_test:.4f}, R²: {r2_test:.4f}")
+        print()
+
+    # Average metrics
+    avg_train_mse = np.mean(all_train_mse)
+    avg_train_mae = np.mean(all_train_mae)
+    avg_train_r2 = np.mean(all_train_r2)
+
+    avg_test_mse = np.mean(all_test_mse)
+    avg_test_mae = np.mean(all_test_mae)
+    avg_test_r2 = np.mean(all_test_r2)
+
+    print(f"\n=== Average Metrics Across All Folds ===")
+    print(f"Training -> Avg MSE: {avg_train_mse:.4f}, Avg MAE: {avg_train_mae:.4f}, Avg R²: {avg_train_r2:.4f}")
+    print(f"Testing  -> Avg MSE: {avg_test_mse:.4f}, Avg MAE: {avg_test_mae:.4f}, Avg R²: {avg_test_r2:.4f}")
 
     return {
-        "Average Train MSE": round(avg_mse, 4),
-        "Average Train MAE": round(avg_mae, 4),
-        "Average Train R²": round(avg_r2, 4)
+        "Average Train MSE": round(avg_train_mse, 4),
+        "Average Train MAE": round(avg_train_mae, 4),
+        "Average Train R²": round(avg_train_r2, 4),
     }
 
 
