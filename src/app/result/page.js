@@ -11,6 +11,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ModelTrainingIcon from "@mui/icons-material/ModelTraining";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 
 import {
   Box,
@@ -59,15 +60,27 @@ export default function ResultPage() {
         if (!res.ok) throw new Error("Failed to fetch user data");
         const data = await res.json();
         setUser(data);
+        
+        // If user is not an admin, redirect to home
+        if (data && data.role !== "admin") {
+          toast.error("You don't have permission to view this page.");
+          router.push("/");
+        }
       } catch (err) {
         setError(err.message);
       }
     };
 
     fetchUser();
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const handleAccept = async () => {
+    // Check if user is admin before proceeding
+    if (!user || user.role !== "admin") {
+      toast.error("You don't have permission to perform this action.");
+      return;
+    }
+    
     setLoading(true);
     const toastId = toast.loading("Saving model...");
     try {
@@ -111,6 +124,12 @@ export default function ResultPage() {
   };
 
   const handleReject = () => {
+    // Check if user is admin before proceeding
+    if (!user || user.role !== "admin") {
+      toast.error("You don't have permission to perform this action.");
+      return;
+    }
+    
     toast("Model rejected. Try training again.");
     router.push("/trainmodel");
   };
@@ -149,14 +168,26 @@ export default function ResultPage() {
   };
 
   const goNewModel = () => {
+    // Check if user is admin before navigating
+    if (!user || user.role !== "admin") {
+      toast.error("You don't have permission to add new models.");
+      return;
+    }
     router.push("/newmodel");
     mainMenuClose();
   };
 
   const goTrainModel = () => {
+    // Check if user is admin before navigating
+    if (!user || user.role !== "admin") {
+      toast.error("You don't have permission to train models.");
+      return;
+    }
     router.push("/trainmodel");
     mainMenuClose();
   };
+
+  const isAdmin = user && user.role === "admin";
 
   if (error) {
     return (
@@ -288,6 +319,21 @@ export default function ResultPage() {
             onClose={userMenuClose}
             sx={{ mt: 1 }}
           >
+            {isAdmin && (
+              <MenuItem
+                onClick={() => {
+                  router.push("/admin");
+                  userMenuClose();
+                }}
+                sx={{
+                  color: "#861F41",
+                  fontWeight: 500,
+                }}
+              >
+                <AdminPanelSettingsIcon sx={{ mr: 1, fontSize: 20 }} />
+                Admin Control Panel
+              </MenuItem>
+            )}
             <MenuItem onClick={logout}>Logout</MenuItem>
           </Menu>
 
@@ -299,9 +345,15 @@ export default function ResultPage() {
             sx={{ mt: 1 }}
           >
             <MenuItem onClick={goHome}>Home</MenuItem>
-            <MenuItem onClick={goNewModel}>Add New Model</MenuItem>
-            <MenuItem onClick={goModels}>Manage and View Models</MenuItem>
-            <MenuItem onClick={goTrainModel}>Train Model</MenuItem>
+            {isAdmin ? (
+              <>
+                <MenuItem onClick={goNewModel}>Add New Model</MenuItem>
+                <MenuItem onClick={goModels}>Manage Models</MenuItem>
+                <MenuItem onClick={goTrainModel}>Train Model</MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={goModels}>View Models</MenuItem>
+            )}
           </Menu>
         </Toolbar>
       </AppBar>
@@ -367,8 +419,8 @@ export default function ResultPage() {
               </Typography>
               
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Review the model performance metrics below. If you are satisfied with the results, 
-                click Accept to save the model. Otherwise, click Reject to go back to the training page.
+                Review the model performance metrics below. If the results are satisfactory, 
+                click Accept to save the model. Otherwise, click Reject to return to the training page.
               </Typography>
             </Box>
 

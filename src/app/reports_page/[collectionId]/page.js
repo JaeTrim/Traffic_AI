@@ -1,5 +1,9 @@
 "use client";
 
+//colors:
+//maroon: 861F41
+//orange: C95B0C
+
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -8,6 +12,8 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EditIcon from "@mui/icons-material/Edit";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import toast from "react-hot-toast";
 
 import {
   Box,
@@ -77,6 +83,7 @@ export default function ReportsPage() {
         setUser({
           userId: data.userId,
           username: data.username,
+          role: data.role,
         });
       } catch (err) {
         console.error("Error fetching user data:", err);
@@ -170,6 +177,8 @@ export default function ReportsPage() {
     groupPredictionsByModel();
   }, [collection]);
 
+  const isAdmin = user && user.role === "admin";
+
   const userMenuOpen = (event) => {
     setUserMenuAnchor(event.currentTarget);
   };
@@ -198,11 +207,19 @@ export default function ReportsPage() {
   };
 
   const goAddModel = () => {
+    if (!isAdmin) {
+      toast.error("You don't have permission to add models.");
+      return;
+    }
     router.push("/newmodel");
     mainMenuClose();
   };
 
   const navigateToTrainModel = () => {
+    if (!isAdmin) {
+      toast.error("You don't have permission to train models.");
+      return;
+    }
     router.push("/trainmodel");
     mainMenuClose();
   };
@@ -322,7 +339,7 @@ export default function ReportsPage() {
           >
             {user ? user.username : "User"}
           </Button>
-
+          
           {/*user menu*/}
           <Menu
             anchorEl={userMenuAnchor}
@@ -330,6 +347,21 @@ export default function ReportsPage() {
             onClose={userMenuClose}
             sx={{ mt: 1 }}
           >
+            {isAdmin && (
+              <MenuItem
+                onClick={() => {
+                  router.push("/admin");
+                  userMenuClose();
+                }}
+                sx={{
+                  color: "#861F41",
+                  fontWeight: 500,
+                }}
+              >
+                <AdminPanelSettingsIcon sx={{ mr: 1, fontSize: 20 }} />
+                Admin Control Panel
+              </MenuItem>
+            )}
             <MenuItem onClick={logout}>Logout</MenuItem>
           </Menu>
 
@@ -341,9 +373,15 @@ export default function ReportsPage() {
             sx={{ mt: 1 }}
           >
             <MenuItem onClick={goHome}>Home</MenuItem>
-            <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
-            <MenuItem onClick={goModelsList}>Manage and View Models</MenuItem>
-            <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+            {isAdmin ? (
+              <>
+                <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
+                <MenuItem onClick={goModelsList}>Manage Models</MenuItem>
+                <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={goModelsList}>View Models</MenuItem>
+            )}
           </Menu>
         </Toolbar>
       </AppBar>

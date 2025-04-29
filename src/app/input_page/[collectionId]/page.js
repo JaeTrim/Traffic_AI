@@ -1,6 +1,4 @@
-
 'use client'
-
 
 //colors:
 //maroon: 861F41
@@ -13,6 +11,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import BarChartIcon from '@mui/icons-material/BarChart'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 
 import {
     Box,
@@ -77,7 +76,8 @@ export default function InputPage() {
                 const data = await res.json()
                 setUser({
                     userId: data.userId,
-                    username: data.username
+                    username: data.username,
+                    role: data.role
                 })
             } 
             catch (err) {
@@ -91,6 +91,8 @@ export default function InputPage() {
 
         fetchUserData()
     }, [])
+
+    const isAdmin = user && user.role === 'admin'
 
     useEffect(() => {
         const fetchCollectionDetails = async () => {
@@ -363,6 +365,10 @@ export default function InputPage() {
     }
 
     const goAddModel = () => {
+        if (!isAdmin) {
+            alert("You don't have permission to add models.")
+            return
+        }
         router.push('/newmodel')
         mainMenuClose()
     }
@@ -374,6 +380,15 @@ export default function InputPage() {
     
     const goCollection = () => {
         router.push(`/reports_page/${collectionId}`)
+    }
+
+    const goTrainModel = () => {
+        if (!isAdmin) {
+            alert("You don't have permission to train models.")
+            return
+        }
+        router.push('/trainmodel')
+        mainMenuClose()
     }
 
     async function entry(userId, modelName) {
@@ -488,6 +503,21 @@ export default function InputPage() {
                         onClose={userMenuClose}
                         sx={{ mt: 1 }}
                     >
+                        {isAdmin && (
+                            <MenuItem
+                                onClick={() => {
+                                    router.push('/admin');
+                                    userMenuClose();
+                                }}
+                                sx={{
+                                    color: '#861F41',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                <AdminPanelSettingsIcon sx={{ mr: 1, fontSize: 20 }} />
+                                Admin Control Panel
+                            </MenuItem>
+                        )}
                         <MenuItem onClick={logout}>Logout</MenuItem>
                     </Menu>
                     
@@ -499,8 +529,15 @@ export default function InputPage() {
                         sx={{ mt: 1 }}
                     >
                         <MenuItem onClick={goHome}>Home</MenuItem>
-                        <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
-                        <MenuItem onClick={goModelsList}>View All Models</MenuItem>
+                        {isAdmin ? (
+                            <>
+                                <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
+                                <MenuItem onClick={goModelsList}>Manage Models</MenuItem>
+                                <MenuItem onClick={goTrainModel}>Train Model</MenuItem>
+                            </>
+                        ) : (
+                            <MenuItem onClick={goModelsList}>View Models</MenuItem>
+                        )}
                     </Menu>
                 </Toolbar>
             </AppBar>
@@ -646,7 +683,7 @@ export default function InputPage() {
                                                                 checked={logTransform}
                                                                 onChange={logTransformChange}
                                                                 name="logTransform"
-                                                                color="black"
+                                                                color="primary"
                                                             />
                                                         }
                                                         label="Apply Log Transform"
@@ -659,49 +696,81 @@ export default function InputPage() {
                                             )}
                                         </>
                                     ) : (
+                                        // Updated upload box to match Train Model page style
                                         <Box
                                             sx={{
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 3,
-                                                p: 3,
                                                 border: '1px dashed #C95B0C',
                                                 borderRadius: 2,
+                                                p: 4,
+                                                textAlign: 'center',
                                                 backgroundColor: '#f8f9fa',
+                                                minHeight: '200px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
                                             }}
                                         >
-                                            <Box sx={{ textAlign: 'center' }}>
-                                                <CloudUploadIcon sx={{ fontSize: 48, color: '#861F41', mb: 2 }} />
-                                                <Typography variant="h6" gutterBottom>
-                                                    Upload CSV File
+                                            <CloudUploadIcon sx={{ fontSize: 48, color: '#861F41', mb: 2 }} />
+                                            
+                                            <Typography variant="h6" gutterBottom>
+                                                Drag and drop your CSV file here
+                                            </Typography>
+                                            
+                                            <Typography 
+                                                variant="body2" 
+                                                color="text.secondary" 
+                                                sx={{ mb: 2 }}
+                                            >
+                                                or
+                                            </Typography>
+                                            
+                                            <Button
+                                                variant="contained"
+                                                component="label"
+                                                sx={{
+                                                    borderRadius: 2,
+                                                    backgroundColor: '#861F41',
+                                                    color: 'white',
+                                                    textTransform: 'none',
+                                                    px: 3,
+                                                    py: 1,
+                                                    '&:hover': {
+                                                        backgroundColor: '#700a30',
+                                                    }
+                                                }}
+                                            >
+                                                Browse Files
+                                                <input
+                                                    type="file"
+                                                    hidden
+                                                    onChange={fileChange}
+                                                    accept=".csv"
+                                                />
+                                            </Button>
+                                            
+                                            {file && (
+                                                <Typography 
+                                                    variant="body2" 
+                                                    sx={{ mt: 2, fontWeight: 'medium' }}
+                                                >
+                                                    Selected: {file.name}
                                                 </Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                                    Upload a CSV file with your prediction data
-                                                </Typography>
+                                            )}
+                                            
+                                            <Box sx={{ mt: 3 }}>
+                                                <FormControlLabel
+                                                    control={
+                                                        <Checkbox
+                                                            checked={logTransform}
+                                                            onChange={logTransformChange}
+                                                            name="logTransform"
+                                                            color="primary"
+                                                        />
+                                                    }
+                                                    label="Apply Log Transform"
+                                                />
                                             </Box>
-                                            
-                                            <TextField
-                                                variant="outlined"
-                                                type="file"
-                                                onChange={fileChange}
-                                                InputLabelProps={{ shrink: true }}
-                                                fullWidth
-                                                required
-                                                inputProps={{ accept: '.csv' }}
-                                            />
-                                            
-                                            {/*csv upload log transform*/}
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        checked={logTransform}
-                                                        onChange={logTransformChange}
-                                                        name="logTransform"
-                                                        color="primary"
-                                                    />
-                                                }
-                                                label="Apply Log Transform"
-                                            />
                                         </Box>
                                     )}
 
@@ -725,7 +794,7 @@ export default function InputPage() {
                                                 py: 1.2,
                                                 backgroundColor: '#861F41',
                                                 '&:hover': {
-                                                    backgroundColor: '#861F41',
+                                                    backgroundColor: '#700a30',
                                                 },
                                                 textTransform: 'none'
                                             }}

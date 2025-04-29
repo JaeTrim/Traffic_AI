@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 //colors:
 //maroon: 861F41
@@ -47,6 +47,7 @@ import {
   RemoveCircle as RemoveIcon,
   CloudUpload as CloudUploadIcon,
   InsertDriveFile as FileIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
 } from "@mui/icons-material";
 
 export default function ModelPage() {
@@ -95,6 +96,7 @@ export default function ModelPage() {
         setCurrentUser({
           id: data.userId,
           name: data.username,
+          role: data.role
         });
       } catch (err) {
         console.error("Error fetching user data:", err);
@@ -147,6 +149,10 @@ export default function ModelPage() {
   }, []);
 
   const openDeleteDialog = (model) => {
+    if (!isAdmin) {
+      showNotification("You don't have permission to delete models.", "error");
+      return;
+    }
     setDeleteDialog({
       open: true,
       model: model,
@@ -241,24 +247,36 @@ export default function ModelPage() {
   };
 
   const addModel = () => {
+    if (!isAdmin) {
+      showNotification("You don't have permission to add models.", "error");
+      return;
+    }
     router.push("/newmodel");
   };
 
   const navigateToAddModel = () => {
+    if (!isAdmin) {
+      showNotification("You don't have permission to add models.", "error");
+      return;
+    }
     router.push("/newmodel");
     closeMainMenu();
   };
-  //   const navigateToModelsList = () => {
-  //     router.push("/managemodel");
-  //     closeMainMenu();
-  //   };
 
   const navigateToTrainModel = () => {
+    if (!isAdmin) {
+      showNotification("You don't have permission to train models.", "error");
+      return;
+    }
     router.push("/trainmodel");
     closeMainMenu();
   };
 
   const openEditDialog = (model) => {
+    if (!isAdmin) {
+      showNotification("You don't have permission to edit models.", "error");
+      return;
+    }
     setEditDialog({
       open: true,
       model: model,
@@ -415,6 +433,8 @@ export default function ModelPage() {
     return parts[parts.length - 1];
   };
 
+  const isAdmin = currentUser && currentUser.role === "admin";
+
   return (
     <Box
       sx={{
@@ -470,6 +490,21 @@ export default function ModelPage() {
             onClose={closeUserMenu}
             sx={{ mt: 1 }}
           >
+            {isAdmin && (
+              <MenuItem
+                onClick={() => {
+                  router.push("/admin");
+                  closeUserMenu();
+                }}
+                sx={{
+                  color: "#861F41",
+                  fontWeight: 500,
+                }}
+              >
+                <AdminPanelSettingsIcon sx={{ mr: 1, fontSize: 20 }} />
+                Admin Control Panel
+              </MenuItem>
+            )}
             <MenuItem onClick={logout}>Logout</MenuItem>
           </Menu>
 
@@ -481,9 +516,12 @@ export default function ModelPage() {
             sx={{ mt: 1 }}
           >
             <MenuItem onClick={goHome}>Home</MenuItem>
-            <MenuItem onClick={navigateToAddModel}>Add New Model</MenuItem>
-            <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
-            {/* <MenuItem onClick={navigateToModelsList}>View All Models</MenuItem> */}
+            {isAdmin ? (
+              <>
+                <MenuItem onClick={navigateToAddModel}>Add New Model</MenuItem>
+                <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+              </>
+            ) : null}
           </Menu>
         </Toolbar>
       </AppBar>
@@ -531,25 +569,27 @@ export default function ModelPage() {
                     color: "#861F41",
                   }}
                 >
-                  Manage Models
+                  {isAdmin ? "Manage Models" : "View Models"}
                 </Typography>
               </Box>
 
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={addModel}
-                sx={{
-                  borderRadius: 2,
-                  backgroundColor: "#861F41", //add new model color
-                  "&:hover": {
-                    backgroundColor: "#861F41",
-                  },
-                  textTransform: "none",
-                }}
-              >
-                New Model
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={addModel}
+                  sx={{
+                    borderRadius: 2,
+                    backgroundColor: "#861F41", //add new model color
+                    "&:hover": {
+                      backgroundColor: "#861F41",
+                    },
+                    textTransform: "none",
+                  }}
+                >
+                  New Model
+                </Button>
+              )}
             </Box>
 
             {loading ? (
@@ -579,9 +619,11 @@ export default function ModelPage() {
                       <TableCell sx={{ fontWeight: "bold" }}>
                         Date Created
                       </TableCell>
-                      <TableCell align="center" sx={{ fontWeight: "bold" }}>
-                        Actions
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell align="center" sx={{ fontWeight: "bold" }}>
+                          Actions
+                        </TableCell>
+                      )}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -656,44 +698,46 @@ export default function ModelPage() {
                             )}
                           </TableCell>
                           <TableCell>{model.createdAt}</TableCell>
-                          <TableCell align="center">
-                            <Box
-                              sx={{
-                                display: "flex",
-                                gap: 1,
-                                justifyContent: "center",
-                              }}
-                            >
-                              <IconButton
-                                color="primary"
-                                onClick={() => openEditDialog(model)}
-                                size="small"
+                          {isAdmin && (
+                            <TableCell align="center">
+                              <Box
                                 sx={{
-                                  border: "1px solid rgba(25, 118, 210, 0.5)",
-                                  borderRadius: 1,
-                                  mr: 1,
+                                  display: "flex",
+                                  gap: 1,
+                                  justifyContent: "center",
                                 }}
                               >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                color="error"
-                                onClick={() => openDeleteDialog(model)}
-                                size="small"
-                                sx={{
-                                  border: "1px solid rgba(211, 47, 47, 0.5)",
-                                  borderRadius: 1,
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </TableCell>
+                                <IconButton
+                                  color="primary"
+                                  onClick={() => openEditDialog(model)}
+                                  size="small"
+                                  sx={{
+                                    border: "1px solid rgba(25, 118, 210, 0.5)",
+                                    borderRadius: 1,
+                                    mr: 1,
+                                  }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  color="error"
+                                  onClick={() => openDeleteDialog(model)}
+                                  size="small"
+                                  sx={{
+                                    border: "1px solid rgba(211, 47, 47, 0.5)",
+                                    borderRadius: 1,
+                                  }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={isAdmin ? 5 : 4} align="center" sx={{ py: 4 }}>
                           <Box sx={{ textAlign: "center", py: 3 }}>
                             <ModelTrainingIcon
                               sx={{ fontSize: 48, color: "#C95B0C", mb: 2 }}
@@ -706,23 +750,25 @@ export default function ModelPage() {
                               color="textSecondary"
                               sx={{ mb: 3 }}
                             >
-                              Add a model to get started
+                              {isAdmin ? "Add a model to get started" : "No models are available to view"}
                             </Typography>
-                            <Button
-                              variant="contained"
-                              startIcon={<AddIcon />}
-                              onClick={addModel}
-                              sx={{
-                                borderRadius: 2,
-                                backgroundColor: "#861F41", //add new model button
-                                "&:hover": {
-                                  backgroundColor: "#861F41",
-                                },
-                                textTransform: "none",
-                              }}
-                            >
-                              Add New Model
-                            </Button>
+                            {isAdmin && (
+                              <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={addModel}
+                                sx={{
+                                  borderRadius: 2,
+                                  backgroundColor: "#861F41", //add new model button
+                                  "&:hover": {
+                                    backgroundColor: "#861F41",
+                                  },
+                                  textTransform: "none",
+                                }}
+                              >
+                                Add New Model
+                              </Button>
+                            )}
                           </Box>
                         </TableCell>
                       </TableRow>
