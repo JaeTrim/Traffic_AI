@@ -9,6 +9,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ModelTrainingIcon from "@mui/icons-material/ModelTraining";
 import SaveIcon from "@mui/icons-material/Save";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import toast from "react-hot-toast";
 
 import {
   Box,
@@ -63,7 +65,14 @@ export default function NewModelPage() {
         setUser({
           userId: data.userId,
           username: data.username,
+          role: data.role
         });
+        
+        // Redirect if not admin
+        if (data.role !== "admin") {
+          toast.error("You don't have permission to add new models.");
+          router.push("/");
+        }
       } catch (err) {
         console.error("Error fetching user data:", err);
       } finally {
@@ -72,7 +81,9 @@ export default function NewModelPage() {
     };
 
     fetchUserData();
-  }, []);
+  }, [router]);
+
+  const isAdmin = user && user.role === "admin";
 
   const inputChange = (index, value) => {
     const newInputs = [...inputs];
@@ -98,6 +109,13 @@ export default function NewModelPage() {
 
   const submit = async (e) => {
     e.preventDefault();
+
+    // Check admin again for security
+    if (!isAdmin) {
+      toast.error("You don't have permission to add models.");
+      return;
+    }
+    
     if (!modelName.trim()) {
       setError("Model name is required.");
       return;
@@ -153,11 +171,12 @@ export default function NewModelPage() {
 
       const responseData = await response.json();
       console.log("Model uploaded successfully:", responseData);
-
+      toast.success("Model added successfully!");
       router.push("/managemodel");
     } catch (err) {
       console.error("Error uploading model:", err);
       setError(err.message);
+      toast.error(err.message || "Failed to add model.");
     } finally {
       setLoading(false);
     }
@@ -190,20 +209,32 @@ export default function NewModelPage() {
     mainMenuClose();
   };
 
-  //   const goModels = () => {
-  //     router.push("/managemodel");
-  //     mainMenuClose();
-  //   };
-
   const navigateToModelsList = () => {
     router.push("/managemodel");
     mainMenuClose();
   };
 
   const navigateToTrainModel = () => {
+    if (!isAdmin) {
+      toast.error("You don't have permission to train models.");
+      return;
+    }
     router.push("/trainmodel");
     mainMenuClose();
   };
+
+  if (userLoading) {
+    return (
+      <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f7fa", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
+
+  // Only allow admin access
+  if (!isAdmin) {
+    return null; // Router will redirect in useEffect
+  }
 
   return (
     <Box
@@ -260,6 +291,21 @@ export default function NewModelPage() {
             onClose={userMenuClose}
             sx={{ mt: 1 }}
           >
+            {isAdmin && (
+              <MenuItem
+                onClick={() => {
+                  router.push("/admin");
+                  userMenuClose();
+                }}
+                sx={{
+                  color: "#861F41",
+                  fontWeight: 500,
+                }}
+              >
+                <AdminPanelSettingsIcon sx={{ mr: 1, fontSize: 20 }} />
+                Admin Control Panel
+              </MenuItem>
+            )}
             <MenuItem onClick={logout}>Logout</MenuItem>
           </Menu>
 
@@ -271,11 +317,14 @@ export default function NewModelPage() {
             sx={{ mt: 1 }}
           >
             <MenuItem onClick={goHome}>Home</MenuItem>
-            {/* <MenuItem onClick={goModels}>Manage Models</MenuItem> */}
-            <MenuItem onClick={navigateToModelsList}>
-              Manage and View Models
-            </MenuItem>
-            <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+            {isAdmin ? (
+              <>
+                <MenuItem onClick={navigateToModelsList}>Manage Models</MenuItem>
+                <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={navigateToModelsList}>View Models</MenuItem>
+            )}
           </Menu>
         </Toolbar>
       </AppBar>

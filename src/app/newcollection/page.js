@@ -10,6 +10,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CollectionsIcon from "@mui/icons-material/Collections";
 import SaveIcon from "@mui/icons-material/Save";
 import MenuIcon from "@mui/icons-material/Menu";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 
 import {
   Box,
@@ -53,7 +54,11 @@ export default function newPage() {
 
         if (response.ok) {
           const data = await response.json();
-          setUser({ userId: data.userId, username: data.username });
+          setUser({ 
+            userId: data.userId, 
+            username: data.username,
+            role: data.role 
+          });
         } else {
           router.push("/login");
         }
@@ -67,6 +72,8 @@ export default function newPage() {
     };
     getUser();
   }, [router]);
+
+  const isAdmin = user && user.role === "admin";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,16 +104,18 @@ export default function newPage() {
         }),
       });
 
-      const data = await response.json();
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || "Failed to create collection.");
       }
 
+      const data = await response.json();
       const { collectionId } = data;
       router.push(`/input_page/${collectionId}`);
     } catch (err) {
       console.error("Error creating collection:", err);
       setError(err.message || "Failed to create collection.");
+    } finally {
       setLoading(false);
     }
   };
@@ -140,12 +149,25 @@ export default function newPage() {
 
   // Navigation functions
   const goAddModel = () => {
+    if (!isAdmin) {
+      alert("You don't have permission to add models.");
+      return;
+    }
     router.push("/newmodel");
     mainMenuClose();
   };
 
   const goModels = () => {
     router.push("/managemodel");
+    mainMenuClose();
+  };
+  
+  const goTrainModel = () => {
+    if (!isAdmin) {
+      alert("You don't have permission to train models.");
+      return;
+    }
+    router.push("/trainmodel");
     mainMenuClose();
   };
 
@@ -204,6 +226,21 @@ export default function newPage() {
             onClose={userMenuClose}
             sx={{ mt: 1 }}
           >
+            {isAdmin && (
+              <MenuItem
+                onClick={() => {
+                  router.push("/admin");
+                  userMenuClose();
+                }}
+                sx={{
+                  color: "#861F41",
+                  fontWeight: 500,
+                }}
+              >
+                <AdminPanelSettingsIcon sx={{ mr: 1, fontSize: 20 }} />
+                Admin Control Panel
+              </MenuItem>
+            )}
             <MenuItem onClick={logout}>Logout</MenuItem>
           </Menu>
 
@@ -215,8 +252,15 @@ export default function newPage() {
             sx={{ mt: 1 }}
           >
             <MenuItem onClick={goBack}>Home</MenuItem>
-            <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
-            <MenuItem onClick={goModels}>View All Models</MenuItem>
+            {isAdmin ? (
+              <>
+                <MenuItem onClick={goAddModel}>Add New Model</MenuItem>
+                <MenuItem onClick={goModels}>Manage Models</MenuItem>
+                <MenuItem onClick={goTrainModel}>Train Model</MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={goModels}>View Models</MenuItem>
+            )}
           </Menu>
         </Toolbar>
       </AppBar>
@@ -322,7 +366,7 @@ export default function newPage() {
                       py: 1.2,
                       backgroundColor: "#C95B0C", //create collection color
                       "&:hover": {
-                        backgroundColor: "#C95B0C",
+                        backgroundColor: "#b04e0a",
                       },
                       textTransform: "none",
                     }}

@@ -232,6 +232,10 @@ function UIAppBar() {
     handleUserMenuClose();
   };
   const navigateToAddModel = () => {
+    if (!user || user.role !== "admin") {
+      alert("You don't have permission to add models.");
+      return;
+    }
     router.push("/newmodel");
     handleMainMenuClose();
   };
@@ -241,14 +245,16 @@ function UIAppBar() {
   };
 
   const navigateToTrainModel = () => {
+    if (!user || user.role !== "admin") {
+      alert("You don't have permission to train models.");
+      return;
+    }
     router.push("/trainmodel");
     handleMainMenuClose();
   };
 
-  // const goModels = () => {
-  //   router.push("/managemodel");
-  //   handleMainMenuClose();
-  // };
+  const isAdmin = user && user.role === "admin";
+
   return (
     <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "#861F41" }}>
       <Toolbar>
@@ -293,14 +299,14 @@ function UIAppBar() {
           onClose={handleUserMenuClose}
           sx={{ mt: 1 }}
         >
-          {user && user.role === "admin" && (
+          {isAdmin && (
             <MenuItem
               onClick={() => {
                 router.push("/admin");
                 handleUserMenuClose();
               }}
               sx={{
-                color: "#1a237e",
+                color: "#861F41",
                 fontWeight: 500,
               }}
             >
@@ -318,12 +324,15 @@ function UIAppBar() {
           onClose={handleMainMenuClose}
           sx={{ mt: 1 }}
         >
-          <MenuItem onClick={navigateToAddModel}>Add New Model</MenuItem>
-          {/* <MenuItem onClick={goModels}>Manage Models</MenuItem> */}
-          <MenuItem onClick={navigateToModelsList}>
-            Manage and View Models
-          </MenuItem>
-          <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+          {isAdmin ? (
+            <>
+              <MenuItem onClick={navigateToAddModel}>Add New Model</MenuItem>
+              <MenuItem onClick={navigateToModelsList}>Manage Models</MenuItem>
+              <MenuItem onClick={navigateToTrainModel}>Train Model</MenuItem>
+            </>
+          ) : (
+            <MenuItem onClick={navigateToModelsList}>View Models</MenuItem>
+          )}
         </Menu>
       </Toolbar>
     </AppBar>
